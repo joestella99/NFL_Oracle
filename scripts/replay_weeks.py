@@ -58,7 +58,8 @@ def _summary(rows: pd.DataFrame) -> dict:
 def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
                              current_season_weight: float = 4.0,
                              recent_season_weight: float = 1.5,
-                             pbp: pd.DataFrame | None = None) -> pd.DataFrame:
+                             pbp: pd.DataFrame | None = None,
+                             include_market: bool = True) -> pd.DataFrame:
     """Fit before every week. Never train on the evaluated week or future weeks.
 
     Historical weeks 1-3 have usable neutral-prior form features even when a
@@ -82,10 +83,10 @@ def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
     # itself uses STRICTLY preceding weeks, regardless of available future scores.
     available = eligible(make_features(full), min_history=0).merge(
         metadata, on='game_id', validate='one_to_one', how='left')
-    feature_cols = list(FEATURES)
+    feature_cols = list(FEATURES) if include_market else [x for x in FEATURES if x != "market_logit"]
     if pbp is not None:
         advanced = make_pregame_advanced(full, pbp)
-        available = available.merge(advanced, on='game_id', validate='one_to_one', how='left')
+        available = available.merge(advanced, on="game_id", validate="one_to_one", how="left")
         feature_cols += ADVANCED_FEATURES
         available[ADVANCED_FEATURES] = available[ADVANCED_FEATURES].fillna(0.0)
     old = available.loc[available['season'] < year].copy()
@@ -108,6 +109,7 @@ def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
         test['static_home_prob'] = frozen.predict_proba(test[feature_cols])[:, 1]
         test['training_games'] = len(training)
         test['uses_advanced_pbp'] = pbp is not None
+        test['uses_market_feature'] = include_market
         test['current_season_training_games'] = int((training['season'] == year).sum())
         test['training_through_week'] = week - 1
         test['current_season_weight'] = current_season_weight
@@ -236,8 +238,9 @@ def main() -> None:
     parser.add_argument("--current-season-weight", type=float, default=4.0,
                         help="Weight for earlier completed games from the evaluated season")
     parser.add_argument("--schedule-csv", help="Optional local nflverse-format schedule CSV")
-    parser.add_argument("--with-pbp", action="store_true", help="Download historical PBP for QB and EPA features")
-    parser.add_argument("--pbp-csv", help="Use previously downloaded PBP CSV")
+    parser.add_argument("--market-blind", action="store_true", help="Exclude sportsbook probability from model features")
+    parser.add_argument("--with-pbp", action="store_true", help="Fetch nflverse PBP and add prior-game EPA/QB efficiency inputs")
+    parser.add_argument("--pbp-csv", help="Use a cached play-by-play CSV instead of downloading")
     parser.add_argument("--output", default="results/weeks_1_5_2026")
     args = parser.parse_args()
     if min(args.weeks) < 1 or max(args.weeks) > 18:
@@ -253,7 +256,8 @@ def main() -> None:
         ).to_pandas()
     predicted = walk_forward_predictions(games, year=args.season, weeks=args.weeks,
                                          pbp=pbp,
-                                         current_season_weight=args.current_season_weight)
+                                         current_season_weight=args.current_season_weight,
+                                         include_market=not args.market_blind)
     report, table = build_report(predicted, games, args.season, args.weeks)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
