@@ -17,6 +17,7 @@ from nfl_oracle.cli import get_data
 from nfl_oracle.core import FEATURES, make_features, eligible, fit_model, evaluate
 from nfl_oracle.advanced import ADVANCED_FEATURES, make_pregame_advanced
 from nfl_oracle.matchups import MATCHUP_FEATURES, matchup_features
+from nfl_oracle.stability import STABILITY_FEATURES, make_stability
 
 
 DEFAULT_BINS = [(0.50, 0.60), (0.60, 0.70), (0.70, 0.80), (0.80, 0.90), (0.90, 1.01)]
@@ -61,7 +62,8 @@ def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
                              recent_season_weight: float = 1.5,
                              pbp: pd.DataFrame | None = None,
                              include_market: bool = True,
-                             include_matchups: bool = False) -> pd.DataFrame:
+                             include_matchups: bool = False,
+                             include_stability: bool = False) -> pd.DataFrame:
     """Fit before every week. Never train on the evaluated week or future weeks.
 
     Historical weeks 1-3 have usable neutral-prior form features even when a
@@ -98,6 +100,12 @@ def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
         available=available.merge(matchups,on='game_id',validate='one_to_one',how='left')
         feature_cols+=MATCHUP_FEATURES
         available[MATCHUP_FEATURES]=available[MATCHUP_FEATURES].fillna(0.)
+    if include_stability:
+        if pbp is None: raise ValueError('Stability features require PBP')
+        stable=make_stability(full,pbp)
+        available=available.merge(stable,on='game_id',validate='one_to_one',how='left')
+        feature_cols+=STABILITY_FEATURES
+        available[STABILITY_FEATURES]=available[STABILITY_FEATURES].fillna(0.)
     old = available.loc[available['season'] < year].copy()
     frozen = fit_model(old, feature_cols=feature_cols)  # Same training sample / feature schema, no current-season updates.
     batches = []
@@ -248,6 +256,7 @@ def main() -> None:
                         help="Weight for earlier completed games from the evaluated season")
     parser.add_argument("--schedule-csv", help="Optional local nflverse-format schedule CSV")
     parser.add_argument("--market-blind", action="store_true", help="Exclude sportsbook probability from model features")
+    parser.add_argument("--stability", action="store_true",help="Add pregame consistency, explosiveness, and trimmed-EPA features")
     parser.add_argument("--matchups", action="store_true", help="Include pass/run scheme and opponent-relative matchup features")
     parser.add_argument("--with-pbp", action="store_true", help="Fetch nflverse PBP and add prior-game EPA/QB efficiency inputs")
     parser.add_argument("--pbp-csv", help="Use a cached play-by-play CSV instead of downloading")
@@ -259,7 +268,7 @@ def main() -> None:
         parser.error("--train-start must precede --season")
     games = get_data(args.schedule_csv, list(range(args.train_start, args.season + 1)))
     pbp = pd.read_csv(args.pbp_csv) if args.pbp_csv else None
-    if (args.with_pbp or args.matchups) and pbp is None:
+    if (args.with_pbp or args.matchups or args.stability) and pbp is None:
         import nflreadpy as nfl
         pbp = nfl.load_pbp(list(range(args.train_start, args.season + 1))).select(
             ["game_id", "posteam", "defteam", "epa", "play_type", "passer_player_id"]
@@ -268,7 +277,8 @@ def main() -> None:
                                          pbp=pbp,
                                          current_season_weight=args.current_season_weight,
                                          include_market=not args.market_blind,
-                                         include_matchups=args.matchups)
+                                         include_matchups=args.matchups,
+                                         include_stability=args.stability)
     report, table = build_report(predicted, games, args.season, args.weeks)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
