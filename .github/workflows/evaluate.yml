@@ -1,0 +1,33 @@
+name: NFL Oracle tests and historical replay
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'pyproject.toml'
+      - '.github/workflows/evaluate.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package
+        run: pip install -e '.[dev]'
+      - name: Unit tests
+        run: pytest -q
+      - name: Real held-out 2025 season
+        run: nfl-oracle backtest --seasons 2020 2021 2022 2023 2024 2025 --test-year 2025 --output results/season_2025
+      - name: Replay Oct 8-12 2026 against final scores
+        run: python scripts/replay_last_week.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nfl-oracle-evaluation
+          path: results/
