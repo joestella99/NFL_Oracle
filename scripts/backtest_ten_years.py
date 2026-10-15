@@ -39,7 +39,8 @@ def compare(games,pbp,first=2016,last=2025):
                 p=model.predict_proba(test[cols])[:,1]
                 outputs.append(pd.DataFrame({'season':year,'week':week,'game_id':test.game_id,
                    'model':name,'home_win':test.home_win.astype(int),
-                   'market_home_prob':test.market_home_prob,'prediction':p}))
+                   'market_home_prob':test.market_home_prob,'prediction':p,
+                   'home_moneyline':test.home_moneyline,'away_moneyline':test.away_moneyline}))
     if not outputs:raise ValueError('No test games')
     out=pd.concat(outputs,ignore_index=True)
     if out.duplicated(['game_id','model']).any():raise ValueError('Duplicate predictions')
