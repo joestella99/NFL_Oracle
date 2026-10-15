@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scripts.consensus_allocator import assemble,returns
 
-def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65):
+def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65,weighting='concentrated'):
     if not 0<=confidence_weight<=1 or budget<=0 or max_bets<1:raise ValueError('Invalid allocation policy')
     d=group.copy()
     d['stake']=0.
@@ -28,7 +28,15 @@ def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65):
     selected=d.sort_values(['selection_score','game_id'],ascending=[False,True]).head(max_bets)
     # Positive weights and modest floor prevent one single game from absorbing the slate.
     raw=np.maximum(.001,selected.selection_score.to_numpy(float)-selected.selection_score.min()+.1)
-    fractions=raw/raw.sum()
+    if weighting=='concentrated':
+        # Precommitted rank weights, not fitted to outcomes.
+        # 70% on the top two, just 10% on the bottom three.
+        rank_weights=np.array([.45,.25,.12,.08,.06,.04],dtype=float)[:len(selected)]
+        fractions=rank_weights/rank_weights.sum()
+    elif weighting=='legacy':
+        fractions=raw/raw.sum()
+    else:
+        raise ValueError('Unknown weighting scheme')
     cents=round(budget*100)
     units=np.floor(fractions*cents).astype(int)
     leftover=cents-units.sum()
@@ -39,9 +47,9 @@ def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65):
     d['profit']=np.where(correct,d.stake*returns(d.selected_odds.to_numpy(float)),-d.stake)
     return d
 
-def simulate_weighted(frame,budget=100.,first=2019):
+def simulate_weighted(frame,budget=100.,first=2019,weighting='concentrated'):
     games=assemble(frame)
-    results=[distribute(g,budget) for _,g in games.loc[games.season>=first].groupby(['season','week'])]
+    results=[distribute(g,budget,weighting=weighting) for _,g in games.loc[games.season>=first].groupby(['season','week'])]
     if not results:raise ValueError('No games')
     d=pd.concat(results,ignore_index=True)
     weekly=d.groupby(['season','week']).agg(wagers=('stake',lambda x:int((x>0).sum())),
@@ -50,19 +58,22 @@ def simulate_weighted(frame,budget=100.,first=2019):
     assert np.allclose(weekly.staked.to_numpy(float),budget,atol=.005)
     by_season=weekly.groupby('season').agg(weeks=('week','size'),profitable_weeks=('winning_week','sum'),
        total_profit=('profit','sum'),total_staked=('staked','sum')).reset_index()
-    report=dict(weeks=len(weekly),bets=int((d.stake>0).sum()),total_staked=float(d.stake.sum()),
+    report=dict(weighting=weighting,weeks=len(weekly),bets=int((d.stake>0).sum()),total_staked=float(d.stake.sum()),
        total_profit_proxy=float(d.profit.sum()),roi_proxy=float(d.profit.sum()/d.stake.sum()),
        profitable_weeks=int(weekly.winning_week.sum()),losing_or_break_even_weeks=int((~weekly.winning_week).sum()),
-       season_results=by_season.to_dict('records'),policy='Spend full $100 on 6 ranked picks each week, weighted by conservative model-confidence and price edge.',
+       season_results=by_season.to_dict('records'),policy='Spend full $100 on 6 ranked picks each week. Concentrated mode weights ranks 45%,25%,12%,8%,6%,4%; legacy mode retains relative scoring weights.',
        limitations='Forced spending may lead to negative expected value. Betting profits are not guaranteed. Historical recorded moneylines are not verified executable quotes; policy developed after seeing historical outcomes.')
     return report,d,weekly
 
 def main():
     p=argparse.ArgumentParser()
     p.add_argument('--predictions',required=True)
-    p.add_argument('--output',default='results/weighted_slate_20')
+    p.add_argument('--output',default='results/weighted_slate_100')
     a=p.parse_args()
-    report,d,weekly=simulate_weighted(pd.read_csv(a.predictions))
+    frame=pd.read_csv(a.predictions)
+    report,d,weekly=simulate_weighted(frame)
+    comparison,_,_=simulate_weighted(frame,weighting='legacy')
+    report['comparison_legacy']={k:comparison[k] for k in ['total_staked','total_profit_proxy','roi_proxy','profitable_weeks','weeks']}
     out=Path(a.output);out.mkdir(parents=True,exist_ok=True)
     (out/'report.json').write_text(json.dumps(report,indent=2))
     d.to_csv(out/'picks.csv',index=False)
