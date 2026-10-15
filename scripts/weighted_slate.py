@@ -39,7 +39,7 @@ def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65):
     d['profit']=np.where(correct,d.stake*returns(d.selected_odds.to_numpy(float)),-d.stake)
     return d
 
-def simulate_weighted(frame,budget=20.,first=2019):
+def simulate_weighted(frame,budget=100.,first=2019):
     games=assemble(frame)
     results=[distribute(g,budget) for _,g in games.loc[games.season>=first].groupby(['season','week'])]
     if not results:raise ValueError('No games')
