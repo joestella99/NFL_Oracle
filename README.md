@@ -72,4 +72,4 @@ No API key is required for public nflverse downloads. Never check API credential
 
 ## Replay last week's games (Oct 8-12, 2026)
 
-Run `python scripts/replay_last_week.py` to predict the completed 2026 Week 6 games from 2020-2025 training, using only earlier results for team form. Prints the per-game winners and correctness, and saves `results/week6_2026/report.json` and `predictions.csv`. Tied games and games missing usable lines are excluded. GitHub Actions runs this replay automatically on push. These evaluations use historical lines without verified timestamps; they are not evidence of executable betting edge.
+Run `python scripts/replay_last_week.py` to predict the completed 2026 Week 5 games from 2020-2025 training, using only earlier results for team form. Prints the per-game winners and correctness, and saves `results/week5_2026/report.json` and `predictions.csv`. Tied games and games missing usable lines are excluded. GitHub Actions runs this replay automatically on push. These evaluations use historical lines without verified timestamps; they are not evidence of executable betting edge.

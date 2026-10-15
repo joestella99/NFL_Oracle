@@ -11,7 +11,7 @@ from nfl_oracle.core import backtest, evaluate
 
 START = pd.Timestamp("2026-10-08")
 END = pd.Timestamp("2026-10-13")  # inclusive through Monday Oct 12
-OUT = Path("results/week6_2026")
+OUT = Path("results/week5_2026")
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
