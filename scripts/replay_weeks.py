@@ -248,7 +248,9 @@ def main() -> None:
     pbp = pd.read_csv(args.pbp_csv) if args.pbp_csv else None
     if args.with_pbp and pbp is None:
         import nflreadpy as nfl
-        pbp = nfl.load_pbp(list(range(args.train_start, args.season + 1))).to_pandas()
+        pbp = nfl.load_pbp(list(range(args.train_start, args.season + 1))).select(
+            ["game_id", "posteam", "defteam", "epa", "play_type", "passer_player_id"]
+        ).to_pandas()
     predicted = walk_forward_predictions(games, year=args.season, weeks=args.weeks,
                                          pbp=pbp,
                                          current_season_weight=args.current_season_weight)
