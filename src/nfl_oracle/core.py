@@ -115,11 +115,12 @@ def eligible(df: pd.DataFrame, min_history: int = 3) -> pd.DataFrame:
     ].copy()
 
 
-def fit_model(training: pd.DataFrame):
+def fit_model(training: pd.DataFrame, sample_weight=None):
     if training['home_win'].nunique() < 2 or len(training) < 70:
         raise ValueError('Need at least 70 historically completed, two-class training games.')
     model = make_pipeline(StandardScaler(), LogisticRegression(C=0.3, max_iter=1500))
-    model.fit(training[FEATURES], training['home_win'].astype(int))
+    kwargs = {'logisticregression__sample_weight': sample_weight} if sample_weight is not None else {}
+    model.fit(training[FEATURES], training['home_win'].astype(int), **kwargs)
     return model
 
 
