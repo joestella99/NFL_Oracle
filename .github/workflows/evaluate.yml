@@ -42,6 +42,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/validate_decisions_multiseason.py --output results/decision_multiseason
       - name: Multi-season validation of opponent-relative matchup model
         run: PYTHONPATH=src:. python scripts/validate_decisions_multiseason.py --years 2024 2025 2026 --train-start 2020 --with-pbp --matchups --output results/matchup_multiseason
+      - name: Margin-versus-EPA disagreement audit and 2026 holdout correction
+        run: PYTHONPATH=src:. python scripts/audit_margin_epa.py --predictions results/matchup_multiseason/decisions.csv --train-season 2025 --test-season 2026 --output results/margin_epa_audit
       - name: Audit Week 1-5 prediction errors and market dependence
         run: python scripts/audit_errors.py --predictions results/weeks_1_5_2026_advanced/predictions.csv --output results/error_audit
       - uses: actions/upload-artifact@v4
