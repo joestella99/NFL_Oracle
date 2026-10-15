@@ -26,6 +26,8 @@ jobs:
         run: nfl-oracle backtest --seasons 2020 2021 2022 2023 2024 2025 --test-year 2025 --output results/season_2025
       - name: Replay Oct 8-12 2026 against final scores
         run: python scripts/replay_last_week.py
+      - name: Replay 2026 weeks 1-5 and audit prediction confidence
+        run: python scripts/replay_weeks.py --season 2026 --weeks 1 2 3 4 5 --output results/weeks_1_5_2026
       - uses: actions/upload-artifact@v4
         if: always()
         with:
