@@ -72,6 +72,10 @@ jobs:
         run: PYTHONPATH=src:. python scripts/confidence_audit.py --predictions results/ten_year_comparison/predictions.csv --output results/high_confidence
       - name: Consensus model and $20 per week historical simulation
         run: PYTHONPATH=src:. python scripts/consensus_allocator.py --predictions results/ten_year_comparison/predictions.csv --output results/consensus_20
+      - name: Full-spend weighted Sunday slate research
+        run: PYTHONPATH=src:. python scripts/weighted_slate.py --predictions results/ten_year_comparison/predictions.csv --output results/weighted_slate_20
+      - name: Historical injury feature holdout evaluation
+        run: PYTHONPATH=src:. python scripts/injury_ablation.py --predictions results/ten_year_comparison/predictions.csv --output results/injury_ablation
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -81,6 +85,8 @@ jobs:
             results/rolling_calibration/
             results/high_confidence/
             results/consensus_20/
+            results/weighted_slate_20/
+            results/injury_ablation/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
