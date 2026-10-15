@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scripts.consensus_allocator import assemble,returns
 
-def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65,weighting='concentrated'):
+def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65,weighting='dynamic'):
     if not 0<=confidence_weight<=1 or budget<=0 or max_bets<1:raise ValueError('Invalid allocation policy')
     d=group.copy()
     d['stake']=0.
@@ -28,7 +28,24 @@ def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65,weighting='co
     selected=d.sort_values(['selection_score','game_id'],ascending=[False,True]).head(max_bets)
     # Positive weights and modest floor prevent one single game from absorbing the slate.
     raw=np.maximum(.001,selected.selection_score.to_numpy(float)-selected.selection_score.min()+.1)
-    if weighting=='concentrated':
+    if weighting=='dynamic':
+        # Confidence, payoff, market disagreement, and inter-model dispersion.
+        # These are NOT independent model votes: use the lowest model estimate.
+        probabilities=selected[['baseline_prob','matchup_prob','sustainability_prob']].to_numpy(float)
+        selected_side=selected.side_home.to_numpy(bool)
+        side_probs=np.where(selected_side[:,None],probabilities,1-probabilities)
+        agreement_gap=np.std(side_probs,axis=1)
+        lower=np.minimum(side_probs.min(axis=1),selected.market_side_prob.to_numpy(float))
+        payoffs=returns(selected.selected_odds.to_numpy(float))
+        offered_break_even=1/(1+payoffs)
+        # Risk-adjusted preference with strong emphasis on high-confidence picks,
+        # tempered by unfavorable prices and three-model disagreement.
+        evidence=np.maximum(.02,lower-.50)**2
+        price_factor=np.exp(np.clip(3*(lower-offered_break_even),-1,1))
+        consensus_factor=np.exp(-8*agreement_gap)
+        dynamic=evidence*price_factor*consensus_factor
+        fractions=dynamic/dynamic.sum()
+    elif weighting=='concentrated':
         # Precommitted rank weights, not fitted to outcomes.
         # 70% on the top two, 18% on the bottom three.
         rank_weights=np.array([.45,.25,.12,.08,.06,.04],dtype=float)[:len(selected)]
@@ -61,7 +78,7 @@ def simulate_weighted(frame,budget=100.,first=2019,weighting='concentrated'):
     report=dict(weighting=weighting,weeks=len(weekly),bets=int((d.stake>0).sum()),total_staked=float(d.stake.sum()),
        total_profit_proxy=float(d.profit.sum()),roi_proxy=float(d.profit.sum()/d.stake.sum()),
        profitable_weeks=int(weekly.winning_week.sum()),losing_or_break_even_weeks=int((~weekly.winning_week).sum()),
-       season_results=by_season.to_dict('records'),policy='Spend full $100 on 6 ranked picks each week. Concentrated mode weights ranks 45%,25%,12%,8%,6%,4%; legacy mode retains relative scoring weights.',
+       season_results=by_season.to_dict('records'),policy='Spend full $100 across six selected games, using probabilities, prices, and correlated-model disagreement to determine stakes dynamically.',
        limitations='Forced spending may lead to negative expected value. Betting profits are not guaranteed. Historical recorded moneylines are not verified executable quotes; policy developed after seeing historical outcomes.')
     return report,d,weekly
 
@@ -72,8 +89,10 @@ def main():
     a=p.parse_args()
     frame=pd.read_csv(a.predictions)
     report,d,weekly=simulate_weighted(frame)
-    comparison,_,_=simulate_weighted(frame,weighting='legacy')
-    report['comparison_legacy']={k:comparison[k] for k in ['total_staked','total_profit_proxy','roi_proxy','profitable_weeks','weeks']}
+    report['comparisons']={}
+    for mode in ('legacy','concentrated'):
+        comparison,_,_=simulate_weighted(frame,weighting=mode)
+        report['comparisons'][mode]={k:comparison[k] for k in ['total_staked','total_profit_proxy','roi_proxy','profitable_weeks','weeks']}
     out=Path(a.output);out.mkdir(parents=True,exist_ok=True)
     (out/'report.json').write_text(json.dumps(report,indent=2))
     d.to_csv(out/'picks.csv',index=False)
