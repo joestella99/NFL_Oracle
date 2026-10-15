@@ -76,6 +76,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/weighted_slate.py --predictions results/ten_year_comparison/predictions.csv --output results/weighted_slate_20
       - name: Historical injury feature holdout evaluation
         run: PYTHONPATH=src:. python scripts/injury_ablation.py --predictions results/ten_year_comparison/predictions.csv --output results/injury_ablation
+      - name: Compare same six selections against spread versus moneyline
+        run: PYTHONPATH=src:. python scripts/spread_comparison.py --predictions results/ten_year_comparison/predictions.csv --output results/spread_comparison
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -87,6 +89,7 @@ jobs:
             results/consensus_20/
             results/weighted_slate_20/
             results/injury_ablation/
+            results/spread_comparison/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
