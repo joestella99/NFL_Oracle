@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from nfl_oracle.cli import get_data
 from nfl_oracle.core import FEATURES, make_features, eligible, fit_model, evaluate
+from nfl_oracle.advanced import ADVANCED_FEATURES, make_pregame_advanced
 
 
 DEFAULT_BINS = [(0.50, 0.60), (0.60, 0.70), (0.70, 0.80), (0.80, 0.90), (0.90, 1.01)]
@@ -56,7 +57,8 @@ def _summary(rows: pd.DataFrame) -> dict:
 
 def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
                              current_season_weight: float = 4.0,
-                             recent_season_weight: float = 1.5) -> pd.DataFrame:
+                             recent_season_weight: float = 1.5,
+                             pbp: pd.DataFrame | None = None) -> pd.DataFrame:
     """Fit before every week. Never train on the evaluated week or future weeks.
 
     Historical weeks 1-3 have usable neutral-prior form features even when a
@@ -80,8 +82,14 @@ def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
     # itself uses STRICTLY preceding weeks, regardless of available future scores.
     available = eligible(make_features(full), min_history=0).merge(
         metadata, on='game_id', validate='one_to_one', how='left')
+    feature_cols = list(FEATURES)
+    if pbp is not None:
+        advanced = make_pregame_advanced(full, pbp)
+        available = available.merge(advanced, on='game_id', validate='one_to_one', how='left')
+        feature_cols += ADVANCED_FEATURES
+        available[ADVANCED_FEATURES] = available[ADVANCED_FEATURES].fillna(0.0)
     old = available.loc[available['season'] < year].copy()
-    frozen = fit_model(old)  # Same training sample / feature schema, no current-season updates.
+    frozen = fit_model(old, feature_cols=feature_cols)  # Same training sample / feature schema, no current-season updates.
     batches = []
     for week in sorted(set(int(w) for w in weeks)):
         training = available.loc[(available['season'] < year) |
@@ -95,10 +103,11 @@ def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
         weights = np.ones(len(training), dtype=float)
         weights[training['season'].to_numpy() == year - 1] = recent_season_weight
         weights[training['season'].to_numpy() == year] = current_season_weight
-        model = fit_model(training, sample_weight=weights)
-        test['model_home_prob'] = model.predict_proba(test[FEATURES])[:, 1]
-        test['static_home_prob'] = frozen.predict_proba(test[FEATURES])[:, 1]
+        model = fit_model(training, sample_weight=weights, feature_cols=feature_cols)
+        test['model_home_prob'] = model.predict_proba(test[feature_cols])[:, 1]
+        test['static_home_prob'] = frozen.predict_proba(test[feature_cols])[:, 1]
         test['training_games'] = len(training)
+        test['uses_advanced_pbp'] = pbp is not None
         test['current_season_training_games'] = int((training['season'] == year).sum())
         test['training_through_week'] = week - 1
         test['current_season_weight'] = current_season_weight
@@ -214,7 +223,7 @@ def build_report(predictions: pd.DataFrame, schedules: pd.DataFrame,
                "model_home_prob", "market_home_prob", "market_correct", "market_confidence",
                "home_moneyline", "away_moneyline", "home_score", "away_score",
                "static_home_prob", "training_games", "current_season_training_games",
-               "training_through_week", "current_season_weight", *FEATURES]
+               "training_through_week", "current_season_weight", "uses_advanced_pbp", *FEATURES, *ADVANCED_FEATURES]
     columns = list(dict.fromkeys([c for c in columns if c in eligible.columns]))
     return report, eligible[columns].copy()
 
@@ -227,6 +236,8 @@ def main() -> None:
     parser.add_argument("--current-season-weight", type=float, default=4.0,
                         help="Weight for earlier completed games from the evaluated season")
     parser.add_argument("--schedule-csv", help="Optional local nflverse-format schedule CSV")
+    parser.add_argument("--with-pbp", action="store_true", help="Download historical PBP for QB and EPA features")
+    parser.add_argument("--pbp-csv", help="Use previously downloaded PBP CSV")
     parser.add_argument("--output", default="results/weeks_1_5_2026")
     args = parser.parse_args()
     if min(args.weeks) < 1 or max(args.weeks) > 18:
@@ -234,7 +245,12 @@ def main() -> None:
     if args.train_start >= args.season:
         parser.error("--train-start must precede --season")
     games = get_data(args.schedule_csv, list(range(args.train_start, args.season + 1)))
+    pbp = pd.read_csv(args.pbp_csv) if args.pbp_csv else None
+    if args.with_pbp and pbp is None:
+        import nflreadpy as nfl
+        pbp = nfl.load_pbp(list(range(args.train_start, args.season + 1))).to_pandas()
     predicted = walk_forward_predictions(games, year=args.season, weeks=args.weeks,
+                                         pbp=pbp,
                                          current_season_weight=args.current_season_weight)
     report, table = build_report(predicted, games, args.season, args.weeks)
     out = Path(args.output)
