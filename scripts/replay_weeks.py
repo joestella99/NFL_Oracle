@@ -1,7 +1,8 @@
 """Chronologically replay NFL regular-season weeks and audit winner confidence.
 
-Default: weeks 1-5 of 2026. The model is trained on preceding seasons,
-while prior games *within* the evaluation season may inform team form.
+Default: weeks 1-5 of 2026. Refit BEFORE each week using prior seasons
+and all completed previous weeks in the evaluation season. Give current-season
+training games extra weight. Freeze each week before observing its outcomes.
 Recorded nflverse odds do NOT establish timestamped executable prices.
 """
 from __future__ import annotations
@@ -13,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from nfl_oracle.cli import get_data
-from nfl_oracle.core import backtest, evaluate
+from nfl_oracle.core import FEATURES, make_features, eligible, fit_model, evaluate
 
 
 DEFAULT_BINS = [(0.50, 0.60), (0.60, 0.70), (0.70, 0.80), (0.80, 0.90), (0.90, 1.01)]
@@ -28,7 +29,8 @@ def _summary(rows: pd.DataFrame) -> dict:
         return {"games": 0, "correct": 0, "accuracy": None, "average_confidence": None,
                 "confidence_minus_accuracy": None, "mean_confidence_correct": None,
                 "mean_confidence_wrong": None, "market_accuracy": None,
-                "market_average_confidence": None, "brier": None, "market_brier": None}
+                "market_average_confidence": None, "brier": None, "market_brier": None,
+                "static_accuracy": None, "static_brier": None, "static_average_confidence": None}
     return {
         "games": int(len(rows)),
         "correct": int(rows["correct"].sum()),
@@ -41,7 +43,69 @@ def _summary(rows: pd.DataFrame) -> dict:
         "market_average_confidence": _number(rows["market_confidence"].mean()),
         "brier": _number(evaluate(rows)["brier"]),
         "market_brier": _number(evaluate(rows, "market_home_prob")["brier"]),
+        "static_accuracy": (_number(((rows["static_home_prob"] >= 0.5).astype(int)
+                                    == rows["home_win"].astype(int)).mean())
+                            if "static_home_prob" in rows else None),
+        "static_brier": (_number(evaluate(rows, "static_home_prob")["brier"])
+                         if "static_home_prob" in rows else None),
+        "static_average_confidence": (_number(np.maximum(rows["static_home_prob"],
+                                                        1 - rows["static_home_prob"]).mean())
+                                      if "static_home_prob" in rows else None),
     }
+
+
+def walk_forward_predictions(games: pd.DataFrame, year: int, weeks: list[int],
+                             current_season_weight: float = 4.0,
+                             recent_season_weight: float = 1.5) -> pd.DataFrame:
+    """Fit before every week. Never train on the evaluated week or future weeks.
+
+    Historical weeks 1-3 have usable neutral-prior form features even when a
+    team has played fewer than 3 games. Using min_history=0 lets the model
+    truly learn from *all* previous weeks, including Weeks 1-3 before Week 5.
+    This is an explicitly different sample definition from the older replay.
+    """
+    if current_season_weight < 1 or not np.isfinite(current_season_weight):
+        raise ValueError('current_season_weight must be finite and >= 1')
+    if recent_season_weight < 1 or not np.isfinite(recent_season_weight):
+        raise ValueError('recent_season_weight must be finite and >= 1')
+    required = {'game_id', 'season', 'week', 'game_type'}
+    if not required.issubset(games):
+        raise ValueError(f'Missing week/season identifiers: {sorted(required - set(games.columns))}')
+    if games['game_id'].duplicated().any():
+        raise ValueError('Schedule must have unique game_ids')
+    full = games.loc[games['game_type'].eq('REG')].copy()
+    metadata = full[['game_id', 'week']].copy()
+    metadata['week'] = pd.to_numeric(metadata['week'], errors='raise').astype(int)
+    # Form is always calculated before a game outcome is appended.  The fit
+    # itself uses STRICTLY preceding weeks, regardless of available future scores.
+    available = eligible(make_features(full), min_history=0).merge(
+        metadata, on='game_id', validate='one_to_one', how='left')
+    old = available.loc[available['season'] < year].copy()
+    frozen = fit_model(old)  # Same training sample / feature schema, no current-season updates.
+    batches = []
+    for week in sorted(set(int(w) for w in weeks)):
+        training = available.loc[(available['season'] < year) |
+                                 ((available['season'] == year) & (available['week'] < week))].copy()
+        test = available.loc[(available['season'] == year) & (available['week'] == week)].copy()
+        if test.empty:
+            continue
+        # Any ties and unfinished games were excluded by eligible().  Crucially,
+        # week N observations cannot enter this training window, even when
+        # historical data already contains their final results.
+        weights = np.ones(len(training), dtype=float)
+        weights[training['season'].to_numpy() == year - 1] = recent_season_weight
+        weights[training['season'].to_numpy() == year] = current_season_weight
+        model = fit_model(training, sample_weight=weights)
+        test['model_home_prob'] = model.predict_proba(test[FEATURES])[:, 1]
+        test['static_home_prob'] = frozen.predict_proba(test[FEATURES])[:, 1]
+        test['training_games'] = len(training)
+        test['current_season_training_games'] = int((training['season'] == year).sum())
+        test['training_through_week'] = week - 1
+        test['current_season_weight'] = current_season_weight
+        batches.append(test)
+    if not batches:
+        raise ValueError(f'No completed eligible games for {year} weeks {weeks}')
+    return pd.concat(batches, ignore_index=True)
 
 
 def build_report(predictions: pd.DataFrame, schedules: pd.DataFrame,
@@ -97,6 +161,8 @@ def build_report(predictions: pd.DataFrame, schedules: pd.DataFrame,
                                              eligible["market_home_prob"], 1 - eligible["market_home_prob"])
     eligible["market_correct"] = eligible["market_predicted_home"].astype(int).eq(eligible["home_win"].astype(int))
     eligible["week"] = pd.to_numeric(eligible["week"], errors="raise").astype(int)
+    if "static_home_prob" in eligible and not eligible["static_home_prob"].between(0, 1).all():
+        raise ValueError("Invalid probability in static_home_prob")
     eligible = eligible.sort_values(["week", "gameday", "game_id"]).reset_index(drop=True)
 
     weekly = []
@@ -107,9 +173,14 @@ def build_report(predictions: pd.DataFrame, schedules: pd.DataFrame,
         not_scored = int((~sched_week["is_complete"]).sum())
         no_model = int((done_week["_prediction_join"].eq("left_only") & ~done_week["is_tie"]).sum())
         sample = eligible.loc[eligible["week"] == w]
-        weekly.append({"week": w, "scheduled": int(len(sched_week)), "ties_excluded": ties,
-                       "unscored_excluded": not_scored, "no_prediction_excluded": no_model,
-                       **_summary(sample)})
+        row = {"week": w, "scheduled": int(len(sched_week)), "ties_excluded": ties,
+               "unscored_excluded": not_scored, "no_prediction_excluded": no_model,
+               **_summary(sample)}
+        if "training_games" in sample and len(sample):
+            row.update({"training_games": int(sample["training_games"].iloc[0]),
+                        "current_season_training_games": int(sample["current_season_training_games"].iloc[0]),
+                        "training_through_week": int(sample["training_through_week"].iloc[0])})
+        weekly.append(row)
 
     bins = []
     for low, high in DEFAULT_BINS:
@@ -119,7 +190,11 @@ def build_report(predictions: pd.DataFrame, schedules: pd.DataFrame,
     report = {
         "season": year,
         "weeks": weeks,
-        "training_seasons": f"< {year}",
+        "training_policy": (f"Walk-forward; refit each week with all prior seasons and "
+                            f"current-season completed weeks before the predicted week. "
+                            f"Current season weight {float(eligible['current_season_weight'].iloc[0]):g}x; "
+                            f"previous season 1.5x; older seasons 1x."
+                            if "current_season_weight" in eligible else "Precomputed model probabilities"),
         "definition": "Confidence = the model's probability that its selected winner wins, always >=50%.",
         "scope": "Completed, untied, regular-season games with sufficient previous team form and valid historical moneylines.",
         "overall": _summary(eligible),
@@ -130,12 +205,17 @@ def build_report(predictions: pd.DataFrame, schedules: pd.DataFrame,
             "Historical sportsbook probabilities are a model input as well as the comparison baseline.",
             "Confidence is a predicted probability, not validated reliability; compare it with realized accuracy.",
             "A five-week sample is small; probability calibration estimates will be noisy.",
+            "4x weighting was a hypothesis, not a cross-validated or optimized parameter.",
+            "Static comparison uses the same zero-minimum-form sample for an apples-to-apples evaluation.",
         ],
     }
     columns = ["week", "gameday", "game_id", "away_team", "home_team",
                "predicted_winner", "actual_winner", "correct", "confidence",
                "model_home_prob", "market_home_prob", "market_correct", "market_confidence",
-               "home_moneyline", "away_moneyline"]
+               "home_moneyline", "away_moneyline", "home_score", "away_score",
+               "static_home_prob", "training_games", "current_season_training_games",
+               "training_through_week", "current_season_weight", *FEATURES]
+    columns = list(dict.fromkeys([c for c in columns if c in eligible.columns]))
     return report, eligible[columns].copy()
 
 
@@ -144,6 +224,8 @@ def main() -> None:
     parser.add_argument("--season", type=int, default=2026)
     parser.add_argument("--weeks", type=int, nargs="+", default=[1, 2, 3, 4, 5])
     parser.add_argument("--train-start", type=int, default=2020)
+    parser.add_argument("--current-season-weight", type=float, default=4.0,
+                        help="Weight for earlier completed games from the evaluated season")
     parser.add_argument("--schedule-csv", help="Optional local nflverse-format schedule CSV")
     parser.add_argument("--output", default="results/weeks_1_5_2026")
     args = parser.parse_args()
@@ -152,7 +234,8 @@ def main() -> None:
     if args.train_start >= args.season:
         parser.error("--train-start must precede --season")
     games = get_data(args.schedule_csv, list(range(args.train_start, args.season + 1)))
-    _, predicted = backtest(games, test_year=args.season)
+    predicted = walk_forward_predictions(games, year=args.season, weeks=args.weeks,
+                                         current_season_weight=args.current_season_weight)
     report, table = build_report(predicted, games, args.season, args.weeks)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
@@ -160,6 +243,7 @@ def main() -> None:
     (out / "report.json").write_text(json.dumps(report, indent=2))
     pd.DataFrame(report["by_week"]).to_csv(out / "weekly_summary.csv", index=False)
     pd.DataFrame(report["by_confidence_bucket"]).to_csv(out / "confidence_buckets.csv", index=False)
+    table.loc[~table["correct"]].to_csv(out / "incorrect_picks_with_features.csv", index=False)
     print(json.dumps(report, indent=2))
     print("\nIndividual picks:")
     print(table[["week", "away_team", "home_team", "predicted_winner", "actual_winner",
