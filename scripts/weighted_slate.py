@@ -1,4 +1,4 @@
-"""Forced-spend $20 weighted slate experiment, distinct from the no-bet EV policy.
+"""Forced-spend $100 weighted slate experiment, distinct from the no-bet EV policy.
 Picks are ranked by a blend of conservative confidence and price-adjusted edge.
 The full budget is allocated in integer cents over at most 6 games; no guarantees.
 Odds are historical recorded prices, not necessarily available before kickoff.
