@@ -30,6 +30,7 @@ def extract(games,injuries):
     reports['role']=np.where(reports.position.eq('QB'),'qb',
                         np.where(reports.position.isin(OL),'ol','other'))
     reports=reports[reports.role.isin(['qb','ol'])].copy()
+    reports['player_key']=reports['gsis_id'].fillna(reports.get('full_name',pd.Series('',index=reports.index))).astype(str) if 'gsis_id' in reports else reports['full_name'].astype(str)
     observations=[];audit=[]
     for game in schedule.itertuples(index=False):
         kickoff=game.kickoff_utc
@@ -38,7 +39,7 @@ def extract(games,injuries):
             sub=reports[(reports.season==game.season)&(reports.week==game.week)&(reports.team==team)]
             # A later overwrite is not evidence the last status was known before kickoff.
             known=sub[(sub.date_modified.notna())&(sub.date_modified<kickoff)].copy()
-            latest=known.sort_values('date_modified').drop_duplicates(['position','team','season','week'],keep='last')
+            latest=known.sort_values('date_modified').drop_duplicates(['player_key','team','season','week'],keep='last')
             for role in ['qb','ol']:
                 available=latest[latest.role.eq(role)]
                 row={'game_id':game.game_id,'team':team,'role':role,'kickoff_utc':str(kickoff),
