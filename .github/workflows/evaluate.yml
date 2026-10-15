@@ -66,8 +66,15 @@ jobs:
         run: pip install -e '.[dev]'
       - name: Ten complete seasons 2016-2025
         run: PYTHONPATH=src:. python scripts/backtest_ten_years.py --first 2016 --last 2025 --train-from 2013
+      - name: Rolling multi-season calibration
+        run: PYTHONPATH=src:. python scripts/rolling_calibration.py --predictions results/ten_year_comparison/predictions.csv --output results/rolling_calibration
+      - name: Ten-year high-confidence hit-rate audit
+        run: PYTHONPATH=src:. python scripts/confidence_audit.py --predictions results/ten_year_comparison/predictions.csv --output results/high_confidence
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nfl-oracle-ten-year-replay
-          path: results/ten_year_comparison/
+          path: |
+            results/ten_year_comparison/
+            results/rolling_calibration/
+            results/high_confidence/
