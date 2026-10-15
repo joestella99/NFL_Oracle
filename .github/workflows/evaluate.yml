@@ -70,6 +70,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/rolling_calibration.py --predictions results/ten_year_comparison/predictions.csv --output results/rolling_calibration
       - name: Ten-year high-confidence hit-rate audit
         run: PYTHONPATH=src:. python scripts/confidence_audit.py --predictions results/ten_year_comparison/predictions.csv --output results/high_confidence
+      - name: Consensus model and $20 per week historical simulation
+        run: PYTHONPATH=src:. python scripts/consensus_allocator.py --predictions results/ten_year_comparison/predictions.csv --output results/consensus_20
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -78,6 +80,7 @@ jobs:
             results/ten_year_comparison/
             results/rolling_calibration/
             results/high_confidence/
+            results/consensus_20/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
