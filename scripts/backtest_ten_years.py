@@ -17,7 +17,7 @@ from nfl_oracle.stability import make_stability,STABILITY_FEATURES
 def compare(games,pbp,first=2016,last=2025):
     if first>=last: raise ValueError("Require at least two test seasons")
     full=games.loc[games.game_type.eq('REG')].copy()
-    info=full[['game_id','week']].drop_duplicates('game_id')
+    info=full[['game_id','week','spread_line','home_spread_odds','away_spread_odds','home_score','away_score']].drop_duplicates('game_id')
     rows=eligible(make_features(full),min_history=0).merge(info,on='game_id',validate='one_to_one')
     for fn,cols in [(make_pregame_advanced,ADVANCED_FEATURES),
                     (matchup_features,MATCHUP_FEATURES),(make_stability,STABILITY_FEATURES)]:
@@ -40,7 +40,10 @@ def compare(games,pbp,first=2016,last=2025):
                 outputs.append(pd.DataFrame({'season':year,'week':week,'game_id':test.game_id,
                    'model':name,'home_win':test.home_win.astype(int),
                    'market_home_prob':test.market_home_prob,'prediction':p,
-                   'home_moneyline':test.home_moneyline,'away_moneyline':test.away_moneyline}))
+                   'home_moneyline':test.home_moneyline,'away_moneyline':test.away_moneyline,
+                   'spread_line':test.spread_line,'home_spread_odds':test.home_spread_odds,
+                   'away_spread_odds':test.away_spread_odds,
+                   'home_score':test.home_score,'away_score':test.away_score}))
     if not outputs:raise ValueError('No test games')
     out=pd.concat(outputs,ignore_index=True)
     if out.duplicated(['game_id','model']).any():raise ValueError('Duplicate predictions')
