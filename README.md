@@ -79,3 +79,12 @@ Run `python scripts/replay_last_week.py` to predict the completed 2026 Week 5 ga
 Run `python scripts/replay_weeks.py --season 2026 --weeks 1 2 3 4 5`. The GitHub Actions workflow also runs it and uploads `results/weeks_1_5_2026/` as an artifact containing `report.json`, `predictions.csv`, `weekly_summary.csv`, `confidence_buckets.csv`, and `incorrect_picks_with_features.csv`.
 
 **Average confidence** is the mean probability the model assigned to *its predicted winner* (max of the home and away probability). It is not realized accuracy: compare these side-by-side. The report includes weekly and overall accuracy, sportsbook-favorite accuracy, Brier score, confidence on correct vs wrong picks, confidence ranges, and excluded ties/missing results/missing odds. The primary five-week replay now **refits before every week's games** on earlier seasons and all finished prior weeks of 2026. Early-season games are retained using baseline team-form defaults. Training weights are: **2026 = 4×**, **2025 = 1.5×**, earlier seasons = 1× per game. Weights are experimental, not tuned to these weeks. The output compares this walk-forward model against a frozen pre-2026 model on the same games. `incorrect_picks_with_features.csv` preserves all incorrect predictions and their model inputs for later error analysis. Historical bookmaker moneylines lack verified pregame timestamps, so this is not a tradable-profit claim.
+
+
+## Enhanced historical replay: QB efficiency and EPA
+
+Run `python scripts/replay_weeks.py --with-pbp --output results/weeks_1_5_2026_advanced` to add prior-game rolling offense/defense EPA per play, matchup differential, the previous game's primary-passer EPA per pass, and passer share. The regular baseline without these features is retained in the same GitHub Actions run for an apples-to-apples comparison.
+
+The walk-forward model refits **before each week**, using all completed earlier weeks in 2026 at **4x sample weight**, 2025 at 1.5x, and earlier seasons at 1x. Games on the same calendar date cannot contribute to one another's features. Historical leading passer is **not a confirmed starting-QB forecast**; this model still lacks injuries and lineup verification. Recorded nflverse sportsbook prices lack verified pregame timestamps.
+
+The initial 2026 Weeks 1–5 advanced test found 50 correct of 78 games (64.1%), Brier 0.231685 compared with basic model 0.231755 and sportsbook 0.228903. These are small-sample findings, **not evidence of profitable betting**. See the Actions evaluation artifact for detailed error files.
