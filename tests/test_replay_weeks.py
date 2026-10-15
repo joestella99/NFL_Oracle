@@ -65,3 +65,54 @@ def test_probabilities_outside_zero_one_rejected():
     p.loc[0,'model_home_prob']=1.2
     with pytest.raises(ValueError, match='Invalid probability'):
         build_report(p, schedule(), 2026, [1])
+
+
+def synthetic_seasons():
+    """Small offline league with unique teams per week and realistic game IDs."""
+    result = []
+    teams = [f'T{i}' for i in range(16)]
+    for season in [2024, 2025, 2026]:
+        for week in range(1, 7):
+            for pair in range(8):
+                home = teams[pair] if (season + week + pair) % 2 else teams[15-pair]
+                away = teams[15-pair] if (season + week + pair) % 2 else teams[pair]
+                result.append(dict(
+                    game_id=f'{season}_{week}_{pair}', season=season, week=week,
+                    game_type='REG', gameday=f'{season}-09-{week + 1:02d}',
+                    home_team=home, away_team=away,
+                    home_score=18 + ((season + week + pair * 3) % 19),
+                    away_score=10 + ((season + week * 3 + pair * 2) % 17) +
+                               int(18 + ((season + week + pair * 3) % 19) == 10 + ((season + week * 3 + pair * 2) % 17)),
+                    home_moneyline=-150, away_moneyline=130,
+                    home_rest=7, away_rest=7,
+                ))
+    return pd.DataFrame(result)
+
+
+def test_weekly_refit_only_uses_previous_weeks():
+    from scripts.replay_weeks import walk_forward_predictions
+    full = synthetic_seasons()
+    results = walk_forward_predictions(full, 2026, [1,2,3,4,5])
+    assert len(results) == 5 * 8
+    assert results.groupby('week')['current_season_training_games'].first().tolist() == [0,8,16,24,32]
+    assert results.groupby('week')['training_through_week'].first().tolist() == [0,1,2,3,4]
+    assert (results['current_season_weight'] == 4.0).all()
+    assert results['model_home_prob'].between(0,1).all()
+    assert results['static_home_prob'].between(0,1).all()
+
+
+def test_future_results_cannot_change_week_five_prediction():
+    from scripts.replay_weeks import walk_forward_predictions
+    games = synthetic_seasons()
+    first = walk_forward_predictions(games, 2026, [5]).sort_values('game_id')
+    changed = games.copy()
+    mask = (changed['season'] == 2026) & (changed['week'] >= 5)
+    changed.loc[mask,['home_score','away_score']] = changed.loc[mask,['away_score','home_score']].to_numpy()
+    second = walk_forward_predictions(changed, 2026, [5]).sort_values('game_id')
+    assert first['model_home_prob'].to_numpy() == pytest.approx(second['model_home_prob'].to_numpy())
+
+
+def test_current_weight_must_be_valid():
+    from scripts.replay_weeks import walk_forward_predictions
+    with pytest.raises(ValueError, match='current_season_weight'):
+        walk_forward_predictions(synthetic_seasons(), 2026, [5], current_season_weight=0.5)
