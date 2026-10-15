@@ -73,3 +73,9 @@ No API key is required for public nflverse downloads. Never check API credential
 ## Replay last week's games (Oct 8-12, 2026)
 
 Run `python scripts/replay_last_week.py` to predict the completed 2026 Week 5 games from 2020-2025 training, using only earlier results for team form. Prints the per-game winners and correctness, and saves `results/week5_2026/report.json` and `predictions.csv`. Tied games and games missing usable lines are excluded. GitHub Actions runs this replay automatically on push. These evaluations use historical lines without verified timestamps; they are not evidence of executable betting edge.
+
+## Multiweek confidence audit: 2026 Weeks 1–5
+
+Run `python scripts/replay_weeks.py --season 2026 --weeks 1 2 3 4 5`. The GitHub Actions workflow also runs it and uploads `results/weeks_1_5_2026/` as an artifact containing `report.json`, `predictions.csv`, `weekly_summary.csv`, and `confidence_buckets.csv`.
+
+**Average confidence** is the mean probability the model assigned to *its predicted winner* (max of the home and away probability). It is not realized accuracy: compare these side-by-side. The report includes weekly and overall accuracy, sportsbook-favorite accuracy, Brier score, confidence on correct vs wrong picks, confidence ranges, and excluded ties/missing results/missing odds. Training uses only seasons before 2026; rolling team features use only previous games. Historical bookmaker moneylines lack verified pregame timestamps, so this is an experiment, not a tradable-profit claim.
