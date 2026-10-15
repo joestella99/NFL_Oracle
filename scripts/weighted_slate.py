@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scripts.consensus_allocator import assemble,returns
 
-def distribute(group,budget=20.0,max_bets=6,confidence_weight=.65):
+def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65):
     if not 0<=confidence_weight<=1 or budget<=0 or max_bets<1:raise ValueError('Invalid allocation policy')
     d=group.copy()
     d['stake']=0.
@@ -53,7 +53,7 @@ def simulate_weighted(frame,budget=20.,first=2019):
     report=dict(weeks=len(weekly),bets=int((d.stake>0).sum()),total_staked=float(d.stake.sum()),
        total_profit_proxy=float(d.profit.sum()),roi_proxy=float(d.profit.sum()/d.stake.sum()),
        profitable_weeks=int(weekly.winning_week.sum()),losing_or_break_even_weeks=int((~weekly.winning_week).sum()),
-       season_results=by_season.to_dict('records'),policy='Spend full $20 on 6 ranked picks each week, weighted by conservative model-confidence and price edge.',
+       season_results=by_season.to_dict('records'),policy='Spend full $100 on 6 ranked picks each week, weighted by conservative model-confidence and price edge.',
        limitations='Forced spending may lead to negative expected value. Betting profits are not guaranteed. Historical recorded moneylines are not verified executable quotes; policy developed after seeing historical outcomes.')
     return report,d,weekly
 
