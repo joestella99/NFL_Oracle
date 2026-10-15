@@ -78,3 +78,21 @@ jobs:
             results/ten_year_comparison/
             results/rolling_calibration/
             results/high_confidence/
+
+  historical_personnel_coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package
+        run: pip install -e '.[dev]'
+      - name: Timestamp-filtered injury report coverage audit
+        run: PYTHONPATH=src:. python scripts/export_injury_reports.py --seasons 2023 2024 2025 --output results/personnel_reports
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nfl-oracle-personnel-coverage
+          path: results/personnel_reports/
