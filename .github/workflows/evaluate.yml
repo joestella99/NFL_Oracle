@@ -40,6 +40,8 @@ jobs:
         run: python scripts/choose_winner_decisions.py --selection results/season_2025/backtest_predictions.csv --evaluation results/weeks_1_5_2026_advanced/predictions.csv --evaluation-season 2026 --output results/winner_decisions_2026
       - name: Matched-pipeline multi-season decision validation
         run: PYTHONPATH=src:. python scripts/validate_decisions_multiseason.py --output results/decision_multiseason
+      - name: Multi-season validation of opponent-relative matchup model
+        run: PYTHONPATH=src:. python scripts/validate_decisions_multiseason.py --years 2024 2025 2026 --train-start 2020 --with-pbp --matchups --output results/matchup_multiseason
       - name: Audit Week 1-5 prediction errors and market dependence
         run: python scripts/audit_errors.py --predictions results/weeks_1_5_2026_advanced/predictions.csv --output results/error_audit
       - uses: actions/upload-artifact@v4
