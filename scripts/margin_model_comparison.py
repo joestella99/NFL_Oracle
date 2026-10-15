@@ -44,7 +44,7 @@ def margin_replay(schedules,first=2019,last=2025):
 
 def compare(margin_predictions,winner_predictions,budget=100.):
     _,ml_picks,_=simulate_weighted(winner_predictions,budget=budget,first=int(margin_predictions.season.min()))
-    base=ml_picks.loc[ml_picks.stake>0,['game_id','season','week','side_home','stake','profit']].rename(columns={'profit':'moneyline_profit'})
+    base=ml_picks.loc[ml_picks.stake>0,['game_id','side_home','stake','profit']].rename(columns={'profit':'moneyline_profit'})
     all_data=margin_predictions.merge(base,on='game_id',how='left',validate='one_to_one')
     all_data['ats_edge']=all_data.margin_prediction-all_data.spread_line
     all_data['ats_side_home']=all_data.ats_edge>=0
