@@ -30,7 +30,7 @@ def distribute(group,budget=100.0,max_bets=6,confidence_weight=.65,weighting='co
     raw=np.maximum(.001,selected.selection_score.to_numpy(float)-selected.selection_score.min()+.1)
     if weighting=='concentrated':
         # Precommitted rank weights, not fitted to outcomes.
-        # 70% on the top two, just 10% on the bottom three.
+        # 70% on the top two, 18% on the bottom three.
         rank_weights=np.array([.45,.25,.12,.08,.06,.04],dtype=float)[:len(selected)]
         fractions=rank_weights/rank_weights.sum()
     elif weighting=='legacy':
