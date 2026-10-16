@@ -1,3 +1,17 @@
+# V5 cross-market parlays — ten complete seasons (2016–2025)
+
+[`scripts/parlay_v5_ten_year.py`](scripts/parlay_v5_ten_year.py) runs the **official V5 policy unchanged** on all 2016–2025 regular seasons, with an explicit **2014–2015 held-out margin residual warmup**. Every year's residual distribution uses only prior seasons, all ML winner model variants train on previous seasons' out-of-sample predictions, and spread margin predictions are refitted before each week using past games. It evaluates ML+ML, ML+spread, and spread+spread tickets with 2–4 legs; historical spread pushes void their individual leg. Games cannot appear twice in one ticket.
+
+Runs in [GitHub Actions](https://github.com/joestella99/NFL_Oracle/actions) as part of the regular evaluation workflow, outputs under `results/parlay_v5_ten_year/` and the `nfl-oracle-ten-year-replay` artifact. Outputs: `report.json`, `annual.csv`, `weekly.csv`, `by_parlay_length_and_market.csv`, `all_qualifying_tickets.csv`, `top20_each_week_including_rejected.csv`, and `all_single_market_audits.csv`. For every forecast type the report displays full qualification counts and an **equal one-unit per ticket hypothetical ROI**, and **highest conservative-EV eligible ticket per week** for a more concentrated comparison. There is no actual bankroll, wager size, or forced selection; no risk-sizing plan is implied.
+
+Command after generating the existing ten-year forecasts and 2019–2025 margin replay:
+
+`PYTHONPATH=src:. python scripts/parlay_v5_ten_year.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --recent-margins results/margin_model_comparison/margin_predictions.csv`
+
+**Limits:** Historical moneylines and spreads are not verified same-book as-of quotes; "ROI" assumes the hypothetical compounded prices are tradable and each ticket receives exactly one notional unit. Tickets share game exposures, so their wins and losses are *strongly correlated*. Ten seasons were already consulted repeatedly to build the models; this is retrospective research, not a previously untouched validation set. Only future frozen, time-stamped decisions can establish prospective performance.
+
+---
+
 # NFL Oracle V5 — ML + spread + mixed parlays (percentage-only)
 
 **Current cross-market parlay selection engine:** [`scripts/parlay_mixed_market_v5.py`](scripts/parlay_mixed_market_v5.py), configured in [`config/parlay_mixed_market_policy.json`](config/parlay_mixed_market_policy.json). This expands the official percentage-only 2026 review beyond moneyline-only tickets. Existing V1–V4 research replay scripts remain available; neither sportsbook actions nor bankroll/stake allocation are performed.

@@ -120,6 +120,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/parlay_2026_review.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv
       - name: Compare actual 2026 Week 1-5 cross-market parlay construction including spreads
         run: PYTHONPATH=src:. python scripts/parlay_mixed_market_v5.py --forecasts results/parlay_2026_percentages/model_probabilities.csv --prior-margins results/margin_model_comparison/margin_predictions.csv
+      - name: V5 walk-forward ten-year 2016-2025 ML ATS and mixed parlay simulation
+        run: PYTHONPATH=src:. python scripts/parlay_v5_ten_year.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --recent-margins results/margin_model_comparison/margin_predictions.csv
       - name: Capture new pregame ESPN injury and projected starter snapshots (never backfill past games)
         run: PYTHONPATH=src:. python scripts/capture_espn_current.py
       - name: Freeze canonical research v1 ten-year checkpoint
@@ -156,6 +158,7 @@ jobs:
             results/parlay_portfolio_v3/
             results/parlay_2026_percentages/
             results/parlay_mixed_market_2026/
+            results/parlay_v5_ten_year/
             results/espn_asof_2026/
             results/opportunity_breadth/
             results/checkpoint_v1/
