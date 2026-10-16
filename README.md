@@ -1,3 +1,22 @@
+# NFL Oracle V7 — unified straight picks and parlay research (draft)
+
+V7 is the **default upcoming-game strategy on this research branch**, not
+yet merged into main. It replaces the old moneyline-only shortlist with
+one percentage-only decision engine for **both sides of moneylines and spreads**,
+plus cross-game ML, ATS and mixed parlays. Historical weights are learned
+only from previous seasons' out-of-sample games; forecasts shrink toward the
+sportsbook if the football model has not demonstrated a meaningful Brier gain.
+High-confidence, low-edge picks remain in the audits. Likes are never allowed
+to change estimated probabilities or manufacture expected return.
+
+Read [V7 architecture, usage and validation gates](docs/v7_unified_straights_parlays.md)
+and review [the proposed change](https://github.com/joestella99/NFL_Oracle/pull/3).
+CI runs the full regression suite followed by the revised 2016–2025 replay.
+The older V5/V6 research commands are retained for comparison. No automatic
+betting, stakes or guaranteed profitable strategy is provided.
+
+---
+
 # V6 confidence-first parlay review
 
 V6 adds a confidence-first view for small-edge parlays alongside the existing

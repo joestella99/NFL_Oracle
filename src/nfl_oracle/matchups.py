@@ -7,6 +7,7 @@ performance with the rival's defense/offense PRIOR to that game.
 from collections import defaultdict,deque
 import numpy as np
 import pandas as pd
+from nfl_oracle.team_identity import franchise_key
 
 MATCHUP_FEATURES=[
  'pass_attack_edge','run_attack_edge','pass_defense_edge','run_defense_edge',
@@ -20,6 +21,8 @@ def matchup_features(games:pd.DataFrame,pbp:pd.DataFrame,window:int=8)->pd.DataF
     plays=pbp.loc[pbp.play_type.isin(['pass','run']),list(needed)].copy()
     plays['epa']=pd.to_numeric(plays.epa,errors='coerce')
     plays=plays.dropna(subset=['game_id','posteam','defteam','epa'])
+    plays['posteam']=plays['posteam'].map(franchise_key)
+    plays['defteam']=plays['defteam'].map(franchise_key)
     grouped=plays.groupby(['game_id','posteam','play_type']).agg(mean_epa=('epa','mean'),plays=('epa','size')).reset_index()
     lookup={(str(x.game_id),str(x.posteam),x.play_type):(float(x.mean_epa),int(x.plays)) for x in grouped.itertuples(index=False)}
     order=games[['game_id','gameday','home_team','away_team','home_score','away_score']].drop_duplicates('game_id').copy()
@@ -31,7 +34,7 @@ def matchup_features(games:pd.DataFrame,pbp:pd.DataFrame,window:int=8)->pd.DataF
     result=[]
     for _,batch in order.sort_values(['gameday','game_id']).groupby('gameday',sort=True):
         for game in batch.itertuples(index=False):
-            h,a=str(game.home_team),str(game.away_team)
+            h,a=franchise_key(game.home_team),franchise_key(game.away_team)
             hp,ap=avg(h,'pass_off'),avg(a,'pass_off')
             hr,ar=avg(h,'run_off'),avg(a,'run_off')
             hd,ad=avg(h,'pass_def'),avg(a,'pass_def')
@@ -49,7 +52,7 @@ def matchup_features(games:pd.DataFrame,pbp:pd.DataFrame,window:int=8)->pd.DataF
         # Update only AFTER every game that day has been assigned its features.
         for game in batch.itertuples(index=False):
             if pd.isna(game.home_score) or pd.isna(game.away_score):continue
-            h,a=str(game.home_team),str(game.away_team)
+            h,a=franchise_key(game.home_team),franchise_key(game.away_team)
             data={}
             for team,rival in [(h,a),(a,h)]:
                 pr,pn=lookup.get((str(game.game_id),team,'pass'),(np.nan,0))
