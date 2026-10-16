@@ -84,6 +84,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/odds_aware_alternatives.py --predictions results/ten_year_comparison/predictions.csv
       - name: Test underdogs covering while losing outright
         run: PYTHONPATH=src:. python scripts/two_sided_spreads.py --margin-predictions results/margin_model_comparison/margin_predictions.csv
+      - name: Compare mixed moneyline and spread portfolio on six distinct games
+        run: PYTHONPATH=src:. python scripts/mixed_market_portfolio.py --winner-predictions results/ten_year_comparison/predictions.csv --margin-predictions results/margin_model_comparison/margin_predictions.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -99,6 +101,7 @@ jobs:
             results/margin_model_comparison/
             results/odds_aware_alternatives/
             results/two_sided_spreads/
+            results/mixed_market_portfolio/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
