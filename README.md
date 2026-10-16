@@ -2,6 +2,42 @@
 
 A small, reproducible NFL moneyline experiment. **It is not a proven betting model.** It does **not** place wagers, guarantee returns, or silently invent odds. The goal is to test whether pregame team form adds predictive information beyond the market's own implied probabilities.
 
+## Frozen checkpoint: NFL Oracle research v1 (October 16, 2026)
+
+**Canonical historical comparator:** `risk_tolerant` in
+`scripts/simulate_ten_year_portfolio.py`, with `scripts/checkpoint_v1.py`
+saving the full selected straight and parlay tickets, weekly and annual
+performance, and a machine-readable manifest in `results/checkpoint_v1/`.
+
+This checkpoint was selected for its **retrospective** 2016–2025 combined
+ROI among the strategies compared. It allocates **$100 per eligible week** to
+moneyline/spread bets across as many distinct games as clear its risk-adjusted
+threshold; if nothing qualifies, it uses a labeled forced fallback moneyline.
+It independently researches **at most one optional two-leg cross-game
+moneyline parlay** with an **extra $2–$15** experimental stake, priced by
+compounding each historical leg's American odds. This parlay selector can
+admit some negative estimated expected-value combinations—its historical
+return **must not** be mistaken for demonstrated edge.
+
+The larger round-robin experiment, the strict positive-EV parlay selector,
+and the broad-spread-capital allocator remain available as **research**, not
+silent replacements. The standalone live `nfl-oracle shortlist` uses a
+different, simpler predictive model and is **not** equivalent to this
+ten-year retrospective portfolio. No automated bets are placed.
+
+To reproduce the checkpoint, run GitHub Actions workflow
+`.github/workflows/evaluate.yml` or produce the historical portfolio CSVs
+and then:
+
+```sh
+PYTHONPATH=src:. python scripts/checkpoint_v1.py \
+  --source results/ten_year_ml_spread_parlays --output results/checkpoint_v1
+```
+
+**Not a proven profitable model.** Historical quotes are not confirmed
+simultaneously executable, the years have been inspected during development,
+and positive historical ROI does not guarantee future returns.
+
 ## What it predicts
 
 - Home-team **win probability** in a regular-season NFL game (not covers/spreads or player props).
