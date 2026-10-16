@@ -14,7 +14,7 @@ def candidates(n=5,season=2025,week=1,policy="risk_tolerant"):
             entries.append({
                 "season":season,"week":week,"policy":policy,
                 "game_id":f"game{j}","kind":"ML","side":side,
-                "win_prob":prob,"odds":-300 if side=="home" else 250,
+                "win_prob":prob,"odds":-400 if side=="home" else 250,
                 "won":True,"payout":1/3 if side=="home" else 2.5,
             })
     return pd.DataFrame(entries)
