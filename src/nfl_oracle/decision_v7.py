@@ -109,6 +109,13 @@ def fit_calibration(history: pd.DataFrame, target_season: int,
     # regularization favors the sportsbook when football improvement is tiny.
     grid = np.linspace(0, 1, 21)
     wm = min(grid, key=lambda w: np.mean(((1-w)*market+w*model-y)**2) + .0005*w*w)
+    # A handful of noisy historical wins is not evidence of model skill.
+    # Require a meaningful absolute Brier improvement before trusting a
+    # nonzero football weight instead of the sportsbook baseline.
+    base_brier = float(np.mean((market-y)**2))
+    best_brier = float(np.mean(((1-wm)*market+wm*model-y)**2))
+    if base_brier - best_brier < .001:
+        wm = 0.0
     ws = min(grid, key=lambda w: np.mean(((1-w)*spread+w*margin-actual)**2) + .05*w*w)
     adjusted = (1-ws)*spread + ws*margin
     residuals = tuple(float(x) for x in (actual - adjusted))
@@ -315,7 +322,7 @@ def evaluate_slate(frame: pd.DataFrame, calibrations: dict[int, Calibration] | C
                 "home_spread_odds","away_spread_odds","spread_line"}
     if not required.issubset(frame):
         raise ValueError("Missing slate fields: "+str(sorted(required-set(frame))))
-    data = frame.copy()
+    data = frame.copy().reset_index(drop=True)
     if "bookmaker" not in data:
         data["bookmaker"] = "HISTORICAL_UNVERIFIED"
     if live_asof is not None:
