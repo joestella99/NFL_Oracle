@@ -93,12 +93,15 @@ def _size_sleeve(tickets, bankroll, mode):
     if bankroll<=0 or not len(tickets):
         return 0.
     if mode=="positive_only":
-        best=max(x["conservative_ev"] for x in tickets)
-        if best<=0:return 0.
-        p=max(x["conservative_joint_probability"] for x in tickets)
-        b=max(x["calculated_decimal_odds"]-1 for x in tickets)
-        return round(min(bankroll, bankroll * POSITIVE_VALUE_FRACTIONAL_KELLY
-                         * max(0, best)/(max(.01,b))),2)
+        qualifying=[x for x in tickets if x["conservative_ev"]>0]
+        if not qualifying:return 0.
+        # Kelly fraction and payout must refer to THE SAME candidate.
+        # Taking the highest edge and highest odds independently is invalid.
+        best=max(qualifying,key=lambda x: x["conservative_ev"] /
+                 max(.01,x["calculated_decimal_odds"]-1))
+        fractional_edge=best["conservative_ev"] / max(.01,best["calculated_decimal_odds"]-1)
+        return round(min(bankroll,bankroll * POSITIVE_VALUE_FRACTIONAL_KELLY *
+                         fractional_edge),2)
     if mode=="exploratory":
         # 0.5% of a hypothetical $1k parlay bankroll, with NO requirement
         # to spend that amount if no combos meet the research threshold.
@@ -181,6 +184,51 @@ def simulate(universe,singles,bankroll=BASE_RESEARCH_BANKROLL):
     return tickets,weeks
 
 
+def audit_correlated_exposure(tickets, singles):
+    """Quantify correlated round-robin risk from repeating a game across tickets.
+
+    Exposed parlay stake is the sum of all tickets that require the selected
+    team to win. If that team loses, that whole exposed amount is lost,
+    irrespective of whether other legs were correct. These exposures overlap;
+    NEVER sum them to estimate total portfolio risk.
+    """
+    fields=["policy","season","week","mode","game_id","side",
+            "parlay_tickets_containing_leg","parlay_stake_exposed",
+            "weekly_parlay_staked","pct_parlay_budget_at_risk",
+            "straight_stake_on_same_game","straight_side",
+            "parlay_pnl_if_leg_loses"]
+    if tickets.empty:
+        return pd.DataFrame(columns=fields)
+    direct=singles.groupby(["policy","season","week","game_id"]).first()
+    rows=[]
+    for key,group in tickets.groupby(["policy","season","week","mode"]):
+        shared={}
+        total=float(group.stake.sum())
+        for ticket in group.itertuples(index=False):
+            games=ticket.games.split(" | ")
+            sides=ticket.sides.split(" | ")
+            for game,side in zip(games,sides):
+                record=shared.setdefault((game,side),[0,0.])
+                record[0]+=1
+                record[1]+=float(ticket.stake)
+        for (game,side),(count,exposed) in sorted(shared.items()):
+            dkey=key[:3]+(game,)
+            stake=float(direct.loc[dkey,"stake"]) if dkey in direct.index else 0.
+            straight_side=str(direct.loc[dkey,"side"]) if dkey in direct.index else ""
+            rows.append({
+                "policy":key[0],"season":key[1],"week":key[2],"mode":key[3],
+                "game_id":game,"side":side,
+                "parlay_tickets_containing_leg":count,
+                "parlay_stake_exposed":round(exposed,2),
+                "weekly_parlay_staked":round(total,2),
+                "pct_parlay_budget_at_risk":exposed/total if total else 0.,
+                "straight_stake_on_same_game":stake,
+                "straight_side":straight_side,
+                "parlay_pnl_if_leg_loses":round(-exposed,2),
+            })
+    return pd.DataFrame(rows,columns=fields)
+
+
 def make_report(universe,singles,tickets,weekly,baseline_parlays):
     results=[]
     for policy in sorted(universe.policy.unique()):
@@ -241,10 +289,21 @@ def main():
     old=pd.read_csv(args.old_parlays)
     tickets,weekly=simulate(universe,singles,bankroll=args.parlay_bankroll)
     rep=make_report(universe,singles,tickets,weekly,old)
+    exposure=audit_correlated_exposure(tickets,singles)
+    if len(exposure):
+        rep["max_single_leg_parlay_exposure_pct"]=round(
+            float(exposure.pct_parlay_budget_at_risk.max())*100,2)
+        rep["max_single_game_parlay_stake_exposure"]=round(
+            float(exposure.parlay_stake_exposed.max()),2)
+    else:
+        rep["max_single_leg_parlay_exposure_pct"]=0.
+        rep["max_single_game_parlay_stake_exposure"]=0.
+
     dst=Path(args.output);dst.mkdir(parents=True,exist_ok=True)
     (dst/"report.json").write_text(json.dumps(rep,indent=2))
     pd.DataFrame(rep["results"]).to_csv(dst/"roi_comparison.csv",index=False)
     weekly.to_csv(dst/"weekly_round_robin.csv",index=False)
+    exposure.to_csv(dst/"correlated_leg_exposure.csv",index=False)
     if len(tickets):tickets.to_csv(dst/"round_robin_tickets.csv",index=False)
     print(json.dumps(rep,indent=2))
 
