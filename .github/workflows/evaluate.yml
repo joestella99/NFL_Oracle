@@ -106,6 +106,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/simulate_ten_year_portfolio.py --winner-predictions results/ten_year_comparison/predictions.csv --warmup-predictions results/ten_year_comparison/warmup_predictions_2014_2015.csv --output results/ten_year_ml_spread_parlays
       - name: Exhaustive cross-game multi-leg round robin and overlap research
         run: PYTHONPATH=src:. python scripts/parlay_round_robin.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv --output results/ten_year_round_robins
+      - name: Selective value clustered-parlay ten-year comparison
+        run: PYTHONPATH=src:. python scripts/selective_parlays.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -132,6 +134,7 @@ jobs:
             results/roi_full_budget_parlays/
             results/ten_year_ml_spread_parlays/
             results/ten_year_round_robins/
+            results/selective_parlays/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
