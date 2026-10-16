@@ -92,3 +92,27 @@ def test_positive_staking_matches_edge_to_same_ticket_payout():
     # Candidate 2 has a larger EV-to-profit ratio despite lower absolute EV:
     # 25% Kelly on 0.12, not on 0.20/20.
     assert _size_sleeve(options,1000,"positive_only")==30
+
+def test_evaluate_all_ten_leg_longshots_before_staking_gate():
+    slate=candidates(10)
+    combos,considered,nlegs=generate_round_robins(slate)
+    assert nlegs==10
+    assert considered==2**10-11
+    assert any(x["leg_count"]==10 for x in combos)
+    assert any(x["leg_count"]==10 and x["joint_probability"]<MIN_JOINT_WIN_PROB
+               for x in combos)
+    # Unprofitable longshots must not become positive-value picks merely
+    # because they happened to hit in a retrospective dataset.
+    assert all(x["conservative_ev"] < 0 for x in combos)
+    assert allocate_round_robins(combos,5,"positive_only")==[]
+
+def test_longest_winning_unfunded_combo_is_not_counted_as_profit():
+    universe=candidates(10)
+    singles=pd.DataFrame([dict(game_id="game0",season=2025,week=1,
+                               policy="risk_tolerant")])
+    funded,weekly=simulate(universe,singles,bankroll=1000)
+    strict=weekly[weekly["mode"].eq("positive_only")].iloc[0]
+    assert strict.max_legs_considered==10
+    assert strict.longest_winning_unfunded_legs==10
+    assert strict.stake==0
+    assert strict.profit==0
