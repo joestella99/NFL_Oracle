@@ -82,6 +82,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/margin_model_comparison.py --winner-predictions results/ten_year_comparison/predictions.csv --output results/margin_model_comparison
       - name: Odds-aware probability calibration and later-season evaluation
         run: PYTHONPATH=src:. python scripts/odds_aware_alternatives.py --predictions results/ten_year_comparison/predictions.csv
+      - name: Test underdogs covering while losing outright
+        run: PYTHONPATH=src:. python scripts/two_sided_spreads.py --margin-predictions results/margin_model_comparison/margin_predictions.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -96,6 +98,7 @@ jobs:
             results/spread_comparison/
             results/margin_model_comparison/
             results/odds_aware_alternatives/
+            results/two_sided_spreads/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
