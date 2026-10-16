@@ -112,6 +112,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/opportunity_breadth.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --baseline results/ten_year_ml_spread_parlays/straight_bets.csv
       - name: Compare parlay lengths, value filters and allocation under equal budget
         run: PYTHONPATH=src:. python scripts/parlay_strategy_lab.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
+      - name: Exhaustive factor-trained multi-parlay portfolio v2 versus checkpoint
+        run: PYTHONPATH=src:. python scripts/parlay_portfolio_v2.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
       - name: Freeze canonical research v1 ten-year checkpoint
         run: PYTHONPATH=src:. python scripts/checkpoint_v1.py --source results/ten_year_ml_spread_parlays --output results/checkpoint_v1
       - uses: actions/upload-artifact@v4
@@ -142,6 +144,7 @@ jobs:
             results/ten_year_round_robins/
             results/selective_parlays/
             results/parlay_strategy_lab/
+            results/parlay_portfolio_v2/
             results/opportunity_breadth/
             results/checkpoint_v1/
 
