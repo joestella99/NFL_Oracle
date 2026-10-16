@@ -18,13 +18,25 @@ import numpy as np
 import pandas as pd
 
 from scripts.roi_decision_v2 import candidates as model_candidates, allocate as v2_allocate
-from scripts.roi_decision_v2 import report as v2_report
+from scripts.roi_decision_v2 import report as v2_report, american_return
 
 STRAIGHT_BUDGET = 100.
 PARLAY_MAX_BUDGET = 15.
 PARLAY_MIN_PROBABILITY = .60
 PARLAY_MIN_JOINT_PROB = .36
 PARLAY_MIN_ESTIMATED_EV = -.10
+
+
+def compounded_parlay_decimal(*american_odds):
+    """Calculate cross-game parlay decimal odds using Action Network's rule.
+
+    Decimal prices multiply for independent legs from different games.
+    https://www.actionnetwork.com/betting-calculators/parlay-calculator
+    This calculation does not verify historical sportsbook availability.
+    """
+    if len(american_odds) < 2:
+        raise ValueError("Parlays require at least two legs")
+    return float(np.prod(1.0 + american_return(american_odds)))
 
 
 def distribute_cents(weights, budget):
@@ -122,7 +134,7 @@ def parlay_from_rejected(universe, singles, max_budget=PARLAY_MAX_BUDGET):
             # Only different games; cross-game ML legs cannot push in NFL's
             # non-tied completed outcomes in the upstream dataset.
             joint_prob = float(a.win_prob * b.win_prob)
-            calculated_decimal = float((1 + a.payout) * (1 + b.payout))
+            calculated_decimal = compounded_parlay_decimal(a.odds, b.odds)
             ev = joint_prob * calculated_decimal - 1.
             if joint_prob < PARLAY_MIN_JOINT_PROB:
                 continue
