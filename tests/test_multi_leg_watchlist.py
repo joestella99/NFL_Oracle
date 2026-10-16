@@ -5,7 +5,7 @@ from nfl_oracle.parlays import multi_leg_parlay_watchlist
 
 T=pd.Timestamp("2026-10-18T16:00:00Z")
 
-def mk(game,odds=100,home=.72,book="Book A",stamp="2026-10-18T15:45:00Z"):
+def mk(game,odds=100,home=.99,book="Book A",stamp="2026-10-18T15:45:00Z"):
     return dict(game_id=game,home_team="PHI",away_team="NYG",bookmaker=book,
        captured_at=stamp,home_moneyline=odds,away_moneyline=-110,
        model_home_prob=home)
