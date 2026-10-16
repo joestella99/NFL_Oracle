@@ -1,7 +1,7 @@
 """Regression checks for full weekly spend and cross-game parlay accounting."""
 import numpy as np
 import pandas as pd
-from scripts.roi_full_budget_parlays import make_singles, parlay_from_rejected, distribute_cents
+from scripts.roi_full_budget_parlays import make_singles, parlay_from_rejected, distribute_cents, compounded_parlay_decimal
 
 def row(game, kind, side, risk, prob, qualifies, week=1, policy="balanced"):
     payout=.25 if kind=="ML" else .9090909091
@@ -60,7 +60,7 @@ def test_parlay_different_games_no_overlap_and_extra_stake():
     assert r.game_a!='a' and r.game_b!='a'
     assert 2<=r.stake<=15
     assert not r.historical_quote_executable
-    assert np.isclose(r.synthetic_decimal_odds,(1+.25)**2)
+    assert np.isclose(r.calculated_parlay_decimal_odds,(1+.25)**2)
     assert not reviewed.empty
 
 def test_no_manufactured_positive_parlay_value():
@@ -70,3 +70,9 @@ def test_no_manufactured_positive_parlay_value():
     s=make_singles(d)
     t,_=parlay_from_rejected(d,s)
     assert t.empty
+
+def test_action_network_parlay_calculator_examples():
+    # Action Network combines -300, -200 and -150 at approximately +233.
+    assert np.isclose(compounded_parlay_decimal(-300,-200),2.0)
+    assert np.isclose(compounded_parlay_decimal(-300,-200,-150),3.3333333333)
+    assert np.isclose(compounded_parlay_decimal(-110,-110,-110), (1+100/110)**3)
