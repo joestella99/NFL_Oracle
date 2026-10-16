@@ -80,6 +80,29 @@ def main():
     shortlist=rank_edges(coming)
     shortlist=shortlist.merge(coming[['game_id','bookmaker','captured_at']],on='game_id',how='left')
     shortlist.to_csv(output/'research_watchlist.csv',index=False)
+    # Experimental two-leg cross-game ML parlay check. The same-book constraint
+    # avoids combining best prices from bookmakers that cannot be parlayed.
+    # The calculation uses only timestamp-filtered, pregame odds and estimates.
+    from .parlays import parlay_watchlist
+    candidate_parlays, audited_parlays = parlay_watchlist(
+        coming, shortlist, quote_time,
+    )
+    candidate_parlays.to_csv(output/'experimental_parlay_watchlist.csv',index=False)
+    audited_parlays.to_csv(output/'parlay_candidate_audit.csv',index=False)
+    (output/'parlay_research_report.json').write_text(json.dumps({
+        'candidates_reviewed':len(audited_parlays),
+        'candidates_featured':len(candidate_parlays),
+        'max_extra_parlay_stake':15,
+        'method':'Two different NFL games at one bookmaker; decimal leg prices multiply. Features use strictly pregame inputs.',
+        'limitations':[
+            'Model probabilities are an experimental shrinkage blend, not prospectively calibrated for parlays.',
+            'The odds provider reports quote update times; valid timestamps do not guarantee ticket acceptance.',
+            'Parlays have high variance; no amount of compounding negative-value legs manufactures value.',
+            'An experimental stake is a research output, never an automated wager.',
+        ],
+    },indent=2))
+    print(f'{len(candidate_parlays)} experimental cross-game parlay opportunity reviewed; '
+          f'{len(audited_parlays)} pairs audited (not proven betting recommendations).')
     print(f'{len(shortlist)} research candidates (NOT validated betting recommendations).')
     print(shortlist.to_string(index=False) if len(shortlist) else 'NO EDGE: No candidates cleared the configured filters.')
 
