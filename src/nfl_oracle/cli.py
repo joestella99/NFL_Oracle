@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--as-of',help='For shortlist: America/New_York timestamp YYYY-MM-DDTHH:MM; excludes results from that date onward')
     parser.add_argument('--odds-csv',help='For shortlist: independent current bookmaker odds CSV with game_id, home_moneyline, away_moneyline, captured_at, bookmaker')
     parser.add_argument('--live-odds', action='store_true', help='Fetch upcoming market quotes using ODDS_API_KEY instead of a CSV')
+    parser.add_argument('--parlay-bankroll',type=float,default=1000.,help='Research bankroll used to dynamically size the aggregate experimental parlay sleeve; it is not automatically wagered')
     parser.add_argument('--output',default='results',help='Output directory')
     args=parser.parse_args()
     output=Path(args.output);output.mkdir(parents=True,exist_ok=True)
@@ -83,17 +84,17 @@ def main():
     # Experimental two-leg cross-game ML parlay check. The same-book constraint
     # avoids combining best prices from bookmakers that cannot be parlayed.
     # The calculation uses only timestamp-filtered, pregame odds and estimates.
-    from .parlays import parlay_watchlist
-    candidate_parlays, audited_parlays = parlay_watchlist(
-        coming, shortlist, quote_time,
+    from .parlays import multi_leg_parlay_watchlist
+    candidate_parlays, audited_parlays = multi_leg_parlay_watchlist(
+        coming, shortlist, quote_time, parlay_bankroll=args.parlay_bankroll,
     )
     candidate_parlays.to_csv(output/'experimental_parlay_watchlist.csv',index=False)
     audited_parlays.to_csv(output/'parlay_candidate_audit.csv',index=False)
     (output/'parlay_research_report.json').write_text(json.dumps({
         'candidates_reviewed':len(audited_parlays),
         'candidates_featured':len(candidate_parlays),
-        'max_extra_parlay_stake':15,
-        'method':'Two different NFL games at one bookmaker; decimal leg prices multiply. Features use strictly pregame inputs.',
+        'research_parlay_bankroll':args.parlay_bankroll,
+        'method':'All 2..N different-game cross-game ML subsets at one bookmaker; overlapping straight bets and round-robin tickets permitted; decimal odds multiply; collective risk allocated dynamically from configured bankroll.',
         'limitations':[
             'Model probabilities are an experimental shrinkage blend, not prospectively calibrated for parlays.',
             'The odds provider reports quote update times; valid timestamps do not guarantee ticket acceptance.',
