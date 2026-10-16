@@ -86,6 +86,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/two_sided_spreads.py --margin-predictions results/margin_model_comparison/margin_predictions.csv
       - name: Compare mixed moneyline and spread portfolio on six distinct games
         run: PYTHONPATH=src:. python scripts/mixed_market_portfolio.py --winner-predictions results/ten_year_comparison/predictions.csv --margin-predictions results/margin_model_comparison/margin_predictions.csv
+      - name: Audit losing selections against pregame football features
+        run: PYTHONPATH=src:. python scripts/miss_football_features.py --predictions results/ten_year_comparison/predictions.csv --selected-bets results/mixed_market_portfolio/selected_bets.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -102,6 +104,7 @@ jobs:
             results/odds_aware_alternatives/
             results/two_sided_spreads/
             results/mixed_market_portfolio/
+            results/miss_football_features/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
