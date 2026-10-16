@@ -56,6 +56,36 @@ def _summary(straights: pd.DataFrame, parlays: pd.DataFrame, season: int | None 
     }
 
 
+def weekly_comparison(singles, parlays):
+    """One row per policy/week: straight, parlay, and combined P/L and ROI."""
+    keys=["policy","season","week"]
+    base=singles.groupby(keys).agg(
+        straight_bets=("game_id","size"),
+        straight_ml=("kind",lambda x:int((x=="ML").sum())),
+        straight_spread=("kind",lambda x:int((x=="ATS").sum())),
+        straight_staked=("stake","sum"),straight_net=("profit","sum"),
+        forced_fallback=("forced_fallback","max"),
+    ).reset_index()
+    if len(parlays):
+        add=parlays.groupby(keys).agg(
+            parlay_tickets=("game_a","size"),
+            parlay_staked=("stake","sum"),parlay_net=("profit","sum"),
+            parlay_wins=("both_won","sum"),
+        ).reset_index()
+        base=base.merge(add,on=keys,how="left",validate="one_to_one")
+    for name in ["parlay_tickets","parlay_staked","parlay_net","parlay_wins"]:
+        if name not in base:
+            base[name]=0
+        base[name]=base[name].fillna(0)
+    base["combined_staked"]=base.straight_staked+base.parlay_staked
+    base["combined_net"]=base.straight_net+base.parlay_net
+    base["straight_roi_pct"]=100*base.straight_net/base.straight_staked
+    base["parlay_roi_pct"]=np.where(base.parlay_staked>0,
+        100*base.parlay_net/base.parlay_staked,np.nan)
+    base["combined_roi_pct"]=100*base.combined_net/base.combined_staked
+    return base.sort_values(keys).reset_index(drop=True)
+
+
 def run(winners, margins, *, expected_seasons=EVALUATED_SEASONS):
     required = {"game_id","season","model","prediction"}
     if not required.issubset(winners):
@@ -142,6 +172,7 @@ def main():
     dst=Path(a.output);dst.mkdir(parents=True,exist_ok=True)
     (dst/"report.json").write_text(json.dumps(report,indent=2))
     annual.to_csv(dst/"annual_comparison.csv",index=False)
+    weekly_comparison(singles,parlays).to_csv(dst/"weekly_comparison.csv",index=False)
     overall.to_csv(dst/"ten_year_totals.csv",index=False)
     singles.to_csv(dst/"straight_bets.csv",index=False)
     if not parlays.empty:
