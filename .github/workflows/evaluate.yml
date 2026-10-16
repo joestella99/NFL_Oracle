@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'scripts/**'
+      - 'config/**'
       - 'pyproject.toml'
       - '.github/workflows/evaluate.yml'
 jobs:
@@ -122,6 +123,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/parlay_mixed_market_v5.py --forecasts results/parlay_2026_percentages/model_probabilities.csv --prior-margins results/margin_model_comparison/margin_predictions.csv
       - name: V5 walk-forward ten-year 2016-2025 ML ATS and mixed parlay simulation
         run: PYTHONPATH=src:. python scripts/parlay_v5_ten_year.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --recent-margins results/margin_model_comparison/margin_predictions.csv
+      - name: V6 confidence-first small-edge ticket comparison using frozen V5 forecasts
+        run: PYTHONPATH=src:. python scripts/parlay_conviction_v6.py --leg-audit results/parlay_v5_ten_year/all_single_market_audits.csv --v5-tickets results/parlay_v5_ten_year/all_qualifying_tickets.csv
       - name: Capture new pregame ESPN injury and projected starter snapshots (never backfill past games)
         run: PYTHONPATH=src:. python scripts/capture_espn_current.py
       - name: Freeze canonical research v1 ten-year checkpoint
@@ -159,6 +162,7 @@ jobs:
             results/parlay_2026_percentages/
             results/parlay_mixed_market_2026/
             results/parlay_v5_ten_year/
+            results/parlay_conviction_v6/
             results/espn_asof_2026/
             results/opportunity_breadth/
             results/checkpoint_v1/
@@ -180,3 +184,4 @@ jobs:
         with:
           name: nfl-oracle-personnel-coverage
           path: results/personnel_reports/
+

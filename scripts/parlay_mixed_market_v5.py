@@ -64,14 +64,15 @@ def load_policy(path:Path=CONFIG)->tuple[str,MixedPolicy]:
     return config["policy_id"],policy
 
 
-def join_forecasts(forecasts:pd.DataFrame,margins:pd.DataFrame)->pd.DataFrame:
+def join_forecasts(forecasts:pd.DataFrame,margins:pd.DataFrame,
+                   variants:tuple[str,...]=VARIANTS)->pd.DataFrame:
     cols=("game_id","season","week","spread_line","home_spread_odds",
           "away_spread_odds","margin_prediction","true_margin")
     if not set(cols).issubset(margins):raise ValueError("Missing margin fields")
     if margins.game_id.duplicated().any() or forecasts.game_id.duplicated().any():
         raise ValueError("Duplicate game IDs")
     f=forecasts.copy()
-    for name in VARIANTS:
+    for name in variants:
         if name not in f:raise ValueError("Missing model variant "+name)
     rows=f.merge(margins[list(cols)],on=["game_id","season","week"],
                  how="inner",validate="one_to_one")
@@ -211,7 +212,7 @@ def ticket(legs:tuple[dict,...],policy:MixedPolicy,variant:str)->dict:
 def build_slates(forecasts:pd.DataFrame,margin_predictions:pd.DataFrame,
                  earlier_margins:pd.DataFrame,policy:MixedPolicy,
                  variants:tuple[str,...]=VARIANTS)->tuple[pd.DataFrame,pd.DataFrame,pd.DataFrame]:
-    games=join_forecasts(forecasts,margin_predictions)
+    games=join_forecasts(forecasts,margin_predictions,variants)
     if games.season.max()>2026:raise ValueError("Replay restricted to 2026")
     earlier=earlier_margins.copy()
     earlier=earlier.loc[(earlier.season<games.season.min())&earlier.true_margin.notna()]
@@ -315,3 +316,4 @@ def main():
 
 if __name__=="__main__":
     main()
+

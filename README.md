@@ -1,3 +1,9 @@
+# V6 confidence-first parlay review
+
+V6 adds a confidence-first view for small-edge parlays alongside the existing
+V5 value view, with liked-pick audits and per-leg contribution comparisons.
+See [the strategy and ten-season diagnostic](docs/v6_conviction_strategy.md).
+
 # V5 cross-market parlays — ten complete seasons (2016–2025)
 
 [`scripts/parlay_v5_ten_year.py`](scripts/parlay_v5_ten_year.py) runs the **official V5 policy unchanged** on all 2016–2025 regular seasons, with an explicit **2014–2015 held-out margin residual warmup**. Every year's residual distribution uses only prior seasons, all ML winner model variants train on previous seasons' out-of-sample predictions, and spread margin predictions are refitted before each week using past games. It evaluates ML+ML, ML+spread, and spread+spread tickets with 2–4 legs; historical spread pushes void their individual leg. Games cannot appear twice in one ticket.
@@ -231,3 +237,4 @@ Separate **football-specific** probability estimator refits a regularized logist
 For each week: one model-favored ML side per game with estimated win probability >= 60%, **regardless of whether it is also a straight bet**; enumerate every 2..N combination (four eligible games give 6 pairs, 4 triples, 1 four-leg ticket). Audit every ticket. A heuristic, nonstatistical haircut reflects model-vs-market and ensemble disagreement. Additional separate stress subtracts 2% from gross payout **per leg**. Ticket qualifies only when each leg has conservatively positive price-adjusted EV, joint risk-adjusted win probability >= 15%, and ticket conservative EV >= 2%. Those are *research risk parameters*, not proven optimal thresholds. **No wager is forced**, even with four highly probable favorites.
 
 All funded tickets share a $1,000 **research bankroll**: at most 5% weekly total parlay exposure, 0.5% to any one ticket, and 2% exposure to each game **across all overlapping parlays and the pre-existing straight stakes**. Any preexisting straight risk above a cap prevents adding parlay risk to that game; it is not silently reallocated or falsely presented as independent. Ticket count and leg count have no hard maximum, but available budget may fund fewer than the audited possibilities. Outputs: `results/parlay_portfolio_v2/{report.json,weekly.csv,annual.csv,all_combinations_and_exposure.csv}`. Existing historical checkpoint and live shortlist are deliberately unchanged. This is NOT a live booking engine or an established profitable system. Historical moneylines cannot verify executable same-book simultaneous parlay prices; the dataset has been heavily researched and is not a clean holdout.
+

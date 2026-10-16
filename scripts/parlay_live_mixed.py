@@ -136,7 +136,7 @@ def check_quotes(quotes:pd.DataFrame,schedule:pd.DataFrame,
 
 
 def build_preview(schedules:pd.DataFrame,quotes:pd.DataFrame,prior_margins:pd.DataFrame,
-                  asof:pd.Timestamp,policy):
+                  asof:pd.Timestamp,policy,conviction_policy=None,liked=frozenset()):
     schedule=schedules.loc[schedules.game_type.eq("REG")].copy()
     schedule["kickoff_utc"]=kickoff_utc(schedule)
     cutoff=asof.tz_convert("America/New_York").tz_localize(None)
@@ -155,6 +155,7 @@ def build_preview(schedules:pd.DataFrame,quotes:pd.DataFrame,prior_margins:pd.Da
     if upcoming.empty:
         return (pd.DataFrame(),pd.DataFrame(),pd.DataFrame(),
             {"status":"NO_UPCOMING_MATCHING_GAMES","games":0})
+    # make_features intentionally omits week; recover it from checked quotes.
     for c in ["home_moneyline","away_moneyline"]:
         # Match projection to supplied current pregame lines, not schedule line.
         upcoming[c]=upcoming[c].astype(float)
@@ -185,11 +186,18 @@ def build_preview(schedules:pd.DataFrame,quotes:pd.DataFrame,prior_margins:pd.Da
     alllegs=[];alltickets=[];allweeks=[]
     for bookmaker,g in upcoming.groupby("bookmaker"):
         forecasts=g[["game_id","season","week",
+            "home_moneyline","away_moneyline",
             "market_home_prob","pregame_form_home_prob"]].copy()
         margins=g[["game_id","season","week","spread_line",
             "home_spread_odds","away_spread_odds","margin_prediction","true_margin"]]
-        legs,tickets,weeks=build_slates(forecasts,margins,prior_margins,policy,
-            variants=("market_home_prob","pregame_form_home_prob"))
+        if conviction_policy is None:
+            legs,tickets,weeks=build_slates(forecasts,margins,prior_margins,policy,
+                variants=("market_home_prob","pregame_form_home_prob"))
+        else:
+            from scripts.parlay_conviction_v6 import build_slates as build_v6
+            legs,tickets,weeks=build_v6(forecasts,margins,prior_margins,policy,
+                conviction_policy,variants=("market_home_prob","pregame_form_home_prob"),
+                liked=liked)
         for obj in (legs,tickets,weeks):
             if len(obj):obj["bookmaker"]=bookmaker
         alllegs.append(legs);alltickets.append(tickets);allweeks.append(weeks)
@@ -202,6 +210,8 @@ def build_preview(schedules:pd.DataFrame,quotes:pd.DataFrame,prior_margins:pd.Da
         quote_rows=int(len(upcoming)),
         reviewed_tickets=len(tickets),
         qualifying=int(tickets.status.eq("QUALIFIES_RESEARCH").sum()) if len(tickets) else 0,
+        conviction_qualifying=(int(tickets.qualifies_conviction.sum())
+            if len(tickets) and "qualifies_conviction" in tickets else 0),
         limitation=[
             "Only h2h and spread offers from the same bookmaker and within ten minutes qualify.",
             "Matched bookmaker quote last_update is not evidence of ticket acceptance.",
@@ -221,26 +231,50 @@ def main():
     source.add_argument("--live-odds",action="store_true")
     a.add_argument("--schedules-csv")
     a.add_argument("--prior-margins",required=True)
+    a.add_argument("--strategy",choices=("v5","v6"),default="v6")
+    a.add_argument("--liked-picks",help="CSV with game_id,side,kind; changes preference rank only")
     a.add_argument("--output",default="results/parlay_pregame_mixed")
     args=a.parse_args()
     asof=parse_asof(args.as_of)
     policy_id,policy=load_policy()
+    from scripts.parlay_conviction_v6 import load_policy as load_conviction,load_likes,export
+    conviction_id,conviction_policy=load_conviction()
+    liked=load_likes(args.liked_picks)
+    if args.strategy=="v5" and liked:
+        a.error("--liked-picks requires --strategy v6")
     schedules=get_data(args.schedules_csv,list(range(2013,2027)))
     quotes=(fetch_live_quotes(schedules) if args.live_odds else pd.read_csv(args.quotes_csv))
     legs,tickets,weeks,report=build_preview(
-        schedules,quotes,pd.read_csv(args.prior_margins),asof,policy)
+        schedules,quotes,pd.read_csv(args.prior_margins),asof,policy,
+        conviction_policy=conviction_policy if args.strategy=="v6" else None,liked=liked)
     report["policy_id"]=policy_id
+    report["conviction_policy_id"]=conviction_id if args.strategy=="v6" else None
     root=Path(args.output);root.mkdir(parents=True,exist_ok=True)
     (root/"report.json").write_text(json.dumps(report,indent=2))
     legs.to_csv(root/"market_side_audit.csv",index=False)
-    tickets.to_csv(root/"all_mixed_parlays.csv",index=False)
+    export(tickets,root/"all_mixed_parlays.csv")
     weeks.to_csv(root/"weekly_funnel.csv",index=False)
     if len(tickets):
         tickets.sort_values(["conservative_ev","estimated_all_win_probability"],
             ascending=[False,False]).head(100).to_csv(
             root/"top_100_including_rejected.csv",index=False)
+        if args.strategy=="v6":
+            from nfl_oracle.conviction import liked_pick_audit
+            # Export ALL eligible tickets in both views. Preferences never
+            # disappear behind an EV-sorted top-100 cutoff.
+            export(tickets.loc[tickets.qualifies_conviction].sort_values(
+                ["bookmaker","model","conviction_rank"]),root/"confidence_view.csv")
+            export(tickets.loc[tickets.qualifies_value].sort_values(
+                ["bookmaker","model","value_rank"]),root/"value_view.csv")
+            export(tickets.loc[tickets.qualifies_conviction].sort_values(
+                ["bookmaker","model","preference_rank"]),root/"preferred_view.csv")
+            liked_pick_audit(legs,tickets,liked).to_csv(root/"liked_pick_audit.csv",index=False)
+    elif args.strategy=="v6" and liked:
+        from nfl_oracle.conviction import liked_pick_audit
+        liked_pick_audit(legs,tickets,liked).to_csv(root/"liked_pick_audit.csv",index=False)
     print(json.dumps(report,indent=2))
 
 
 if __name__=="__main__":
     main()
+
