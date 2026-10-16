@@ -1,4 +1,4 @@
-"""Full-stake mixed-market singles plus *synthetic* cross-game ML parlay research.
+"""Full-stake mixed-market singles plus calculator-priced cross-game ML parlay research.
 
 Singles: choose every qualifying game (no six-pick limit), spend exactly $100
 per observed week; if no game qualifies, fall back to the highest-confidence
@@ -6,8 +6,8 @@ moneyline with a clearly labeled negative/unknown edge. Never promise EV.
 
 Parlays: evaluate a distinct, optional sleeve using TWO rejected moneyline
 legs in different games, no overlap with straight tickets. Joint probabilities
-are illustrative independence products and parlay odds are synthetic products
-of historical recorded moneyline prices, NOT executable SGP quotes.
+are illustrative independence products and parlay odds are standard compounded products
+of historical recorded moneyline prices, NOT verified executable sportsbook quotes.
 """
 from __future__ import annotations
 import argparse
@@ -122,8 +122,8 @@ def parlay_from_rejected(universe, singles, max_budget=PARLAY_MAX_BUDGET):
             # Only different games; cross-game ML legs cannot push in NFL's
             # non-tied completed outcomes in the upstream dataset.
             joint_prob = float(a.win_prob * b.win_prob)
-            synthetic_decimal = float((1 + a.payout) * (1 + b.payout))
-            ev = joint_prob * synthetic_decimal - 1.
+            calculated_decimal = float((1 + a.payout) * (1 + b.payout))
+            ev = joint_prob * calculated_decimal - 1.
             if joint_prob < PARLAY_MIN_JOINT_PROB:
                 continue
             candidate = {
@@ -134,7 +134,7 @@ def parlay_from_rejected(universe, singles, max_budget=PARLAY_MAX_BUDGET):
                 "leg_a_win_probability": a.win_prob,
                 "leg_b_win_probability": b.win_prob,
                 "joint_win_probability_independence": joint_prob,
-                "synthetic_decimal_odds": synthetic_decimal,
+                "calculated_parlay_decimal_odds": calculated_decimal,
                 "estimated_ev_independence": ev,
                 "both_won": bool(a.won and b.won),
                 "independence_assumption": True,
@@ -158,7 +158,7 @@ def parlay_from_rejected(universe, singles, max_budget=PARLAY_MAX_BUDGET):
         stake = round(2. + (max_budget - 2.) * quality * confidence, 2)
         top["stake"] = stake
         top["profit"] = stake * (
-            float(top.synthetic_decimal_odds - 1) if top.both_won else -1.
+            float(top.calculated_parlay_decimal_odds - 1) if top.both_won else -1.
         )
         top["research_only"] = True
         tickets.append(top.to_dict())
@@ -173,11 +173,11 @@ def summarize(universe, singles, parlays, legacy):
         "single_bet_cap": None, "fallback": "highest predicted win-probability ML",
         "parlay_max_extra_weekly": PARLAY_MAX_BUDGET,
         "parlay_legs": 2, "parlay_source": "rejected ML bets on other games",
-        "parlay_price_type": "synthetic, not a quoted executable sportsbook price",
+        "parlay_price_type": "calculated from historical legs using standard Action Network decimal-odds multiplication, not a verified quoted sportsbook ticket",
     }, "warnings": [
         "Forced $100 weekly betting can place capital into a negative-EV market.",
         "More bets or parlays do not guarantee positive ROI; a negative-EV leg is not rescued by multiplication.",
-        "Parlay odds are product-of-historical-moneyline proxies, NOT verified book offers.",
+        "Parlay odds are calculated with standard cross-game leg compounding, but historic leg prices do not establish simultaneous executable offers.",
         "Independence across games is assumed, and not necessarily true.",
         "Parlay stake is ADDITIONAL to the full $100 straight budget.",
         "Prior years have already been researched extensively; later years are not untouched validation.",
@@ -213,10 +213,10 @@ def summarize(universe, singles, parlays, legacy):
                 "straight_roi": float(profit / staked) if staked else None,
                 "parlay_tickets": len(p), "parlay_staked": round(p_staked, 2),
                 "parlay_profit": round(p_profit, 2),
-                "parlay_roi_synthetic": float(p_profit / p_staked) if p_staked else None,
+                "parlay_roi_calculated": float(p_profit / p_staked) if p_staked else None,
                 "combined_staked": round(staked + p_staked, 2),
                 "combined_profit": round(profit + p_profit, 2),
-                "combined_roi_synthetic": (float((profit + p_profit) / (staked + p_staked))
+                "combined_roi_calculated": (float((profit + p_profit) / (staked + p_staked))
                                            if staked + p_staked else None),
                 "prior_v2_bets": old["bets"], "prior_v2_staked": old["staked"],
                 "prior_v2_profit": old["net"],
@@ -255,7 +255,7 @@ def main():
     singles.to_csv(out / "straight_picks.csv", index=False)
     universe.to_csv(out / "market_checks.csv", index=False)
     if not parlays.empty:
-        parlays.to_csv(out / "synthetic_parlay_picks.csv", index=False)
+        parlays.to_csv(out / "calculated_parlay_picks.csv", index=False)
     if not reviewed.empty:
         reviewed.to_csv(out / "parlay_candidates.csv", index=False)
     print(json.dumps(comparison, indent=2))
