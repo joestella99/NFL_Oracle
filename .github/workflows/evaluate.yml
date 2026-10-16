@@ -96,6 +96,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/sample_25_misses.py --predictions results/ten_year_comparison/predictions.csv --selected-bets results/mixed_market_portfolio/selected_bets.csv
       - name: Review strong favorites against both ML and ATS prices
         run: PYTHONPATH=src:. python scripts/decision_intelligence.py --winner-predictions results/ten_year_comparison/predictions.csv --margin-predictions results/margin_model_comparison/margin_predictions.csv
+      - name: Risk-aware ML and ATS decision engine v2 with miss trend audit
+        run: PYTHONPATH=src:. python scripts/roi_decision_v2.py --winner-predictions results/ten_year_comparison/predictions.csv --margin-predictions results/margin_model_comparison/margin_predictions.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -117,6 +119,7 @@ jobs:
             results/spread_residual_correction/
             results/sample_25_misses/
             results/decision_intelligence/
+            results/roi_decision_v2/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
