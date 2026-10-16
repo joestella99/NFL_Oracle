@@ -221,7 +221,7 @@ def game_markets(game: dict, calibration: Calibration, policy: V7Policy):
     return result
 
 
-def _candidate_options(legs: list[dict], policy: V7Policy):
+def _candidate_options(legs: list[dict], policy: V7Policy, liked: frozenset = frozenset()):
     """Keep value and confident alternatives, not just the outright favorite."""
     options = [x for x in legs if x.get("candidate") and "raw_ev" in x]
     # Best expected-value ML, best expected-value ATS, and strongest favorite
@@ -235,10 +235,16 @@ def _candidate_options(legs: list[dict], policy: V7Policy):
     if options:
         highest = max(options, key=lambda x: (x["win_probability"], x["raw_ev"]))
         chosen[highest["selection"]] = highest
-    # An opposite side can appear in the straight audit without exponentially
-    # inflating the parlay pool. Likes do not bypass this predictive ranking.
-    return sorted(chosen.values(), key=lambda x: (-x["raw_ev"], -x["win_probability"],
+    # Base search remains bounded, but eligible explicitly liked alternatives
+    # are also enumerated rather than accidentally lost behind the top-three
+    # optimization. Likes never bypass candidate admissibility or modify EV.
+    base = sorted(chosen.values(), key=lambda x: (-x["raw_ev"], -x["win_probability"],
                                                   x["selection"]))[:policy.maximum_candidate_legs_per_game]
+    included = {x["selection"]: x for x in base}
+    for x in options:
+        if x["selection"] in liked:
+            included[x["selection"]] = x
+    return list(included.values())
 
 
 def _ticket(group, policy: V7Policy, liked: frozenset):
@@ -360,7 +366,7 @@ def evaluate_slate(frame: pd.DataFrame, calibrations: dict[int, Calibration] | C
     for (season, week, book), sub in singles.groupby(["season","week","bookmaker"], dropna=False):
         grouped = {}
         for gid, legs in sub.groupby("game_id"):
-            opts = _candidate_options(legs.to_dict("records"),policy)
+            opts = _candidate_options(legs.to_dict("records"),policy,liked)
             if opts:
                 grouped[gid] = opts
         for n in range(2, min(policy.max_legs,len(grouped))+1):
