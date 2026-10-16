@@ -1,3 +1,17 @@
+# Official NFL Oracle parlay policy: V3 (selected October 16, 2026)
+
+**Default parlay selection entrypoint:** `scripts/parlay_portfolio_v3.py`, using versioned thresholds in [`config/parlay_policy.json`](config/parlay_policy.json). This replaces the old V2 research selector as the preferred **parlay policy**, but does not alter the frozen historical V1 checkpoint, existing straight bet policy, or place actual wagers.
+
+**Official ticket rules:** generate all 2..N cross-game moneyline combinations of favorites with individual predicted win probability >=60%; conservative combined probability >=15%; **conservative ticket EV >=+2%** using **1% gross payout haircut per leg**; *no mandatory positive-EV filter on every individual leg* (weak legs remain explicitly audited). Model probability discount still subtracts a baseline 2 percentage points per leg plus forecast-disagreement penalty.
+
+**Stake rules (hypothetical $1,000 bankroll):** weekly parlay risk <=$50, single ticket <=$5, sum of parlay tickets containing any game <=$20, and straight+parlay tickets containing any game <=$120. Allow multiple parlays and shared teams, never force an eligible ticket merely to increase volume. The straight budget is tracked for overlapping game risk, not deducted from the separate parlay sleeve. No unpriced or unverified wager should be presented as executable.
+
+**Reproduction:** `PYTHONPATH=src:. python scripts/parlay_portfolio_v3.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv`
+
+**Caveat:** The selected model was tuned after inspecting historical 2016–2025 simulations; displayed historical returns are not a clean holdout or evidence of a repeatable real-money edge. Source quotes cannot establish synchronized executable odds. V3 is the official **selection research standard**, not a verified profitable wagering system. V2 stays available for comparison.
+
+---
+
 # NFL Oracle (research prototype)
 
 A small, reproducible NFL moneyline experiment. **It is not a proven betting model.** It does **not** place wagers, guarantee returns, or silently invent odds. The goal is to test whether pregame team form adds predictive information beyond the market's own implied probabilities.

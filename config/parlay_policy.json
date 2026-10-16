@@ -1,0 +1,27 @@
+{
+  "policy_id": "nfl-oracle-parlay-v3-2026-10-16",
+  "status": "official_default_parlay_selection_policy",
+  "description": "Selected combined-ticket >=2% conservative EV with 1% compounded gross-price stress per leg, no individual-leg EV veto, distinct parlay and total game exposure caps.",
+  "risk": {
+    "bankroll": 1000,
+    "min_leg_probability": 0.6,
+    "min_joint_probability": 0.15,
+    "min_conservative_ev": 0.02,
+    "base_probability_haircut": 0.02,
+    "disagreement_haircut_weight": 0.2,
+    "per_leg_price_haircut": 0.01,
+    "require_positive_leg_ev": false,
+    "weekly_parlay_risk_fraction": 0.05,
+    "maximum_ticket_risk_fraction": 0.005,
+    "maximum_game_risk_fraction": 0.02,
+    "maximum_total_game_risk_fraction": 0.12,
+    "minimum_ticket_stake": 0.25
+  },
+  "notes": [
+    "Official default selection STANDARD, not an automated wagering deployment.",
+    "A historical positive ROI does not prove positive future EV; calibrator worse than no-vig market in 2016-2025 testing.",
+    "The $120 total-game cap is applied to combined existing straight + parlay exposure; $20 cap applies only to parlays. Straight exposures above $120 cannot receive additional parlays.",
+    "Never force additional bets or size stakes merely to match the 199 historical selection count.",
+    "Historic moneyline quotes are not executable simultaneous sportsbook parlay prices."
+  ]
+}

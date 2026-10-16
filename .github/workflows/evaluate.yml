@@ -114,6 +114,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/parlay_strategy_lab.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
       - name: Exhaustive factor-trained multi-parlay portfolio v2 versus checkpoint
         run: PYTHONPATH=src:. python scripts/parlay_portfolio_v2.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
+      - name: Official parlay selection V3 (combined EV >=2 pct and 1 pct per-leg payout stress)
+        run: PYTHONPATH=src:. python scripts/parlay_portfolio_v3.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
       - name: Freeze canonical research v1 ten-year checkpoint
         run: PYTHONPATH=src:. python scripts/checkpoint_v1.py --source results/ten_year_ml_spread_parlays --output results/checkpoint_v1
       - uses: actions/upload-artifact@v4
@@ -145,6 +147,7 @@ jobs:
             results/selective_parlays/
             results/parlay_strategy_lab/
             results/parlay_portfolio_v2/
+            results/parlay_portfolio_v3/
             results/opportunity_breadth/
             results/checkpoint_v1/
 

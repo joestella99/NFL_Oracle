@@ -39,9 +39,15 @@ class RiskThreshold:
     base_probability_haircut: float = .02
     disagreement_haircut_weight: float = .20
     per_leg_price_haircut: float = .02
+    # V2 retains the strict individual-leg veto. V3 turns it off using config.
+    require_positive_leg_ev: bool = True
     weekly_parlay_risk_fraction: float = .05
     maximum_ticket_risk_fraction: float = .005
+    # V2: straight + parlay exposure in this cap. V3: parlay-only game cap.
     maximum_game_risk_fraction: float = .02
+    # V3: an *additional* bound for straight + parlay risk on the same game.
+    # None reproduces frozen v2 experimental semantics.
+    maximum_total_game_risk_fraction: float | None = None
     minimum_ticket_stake: float = .25
 
     def validate(self):
@@ -54,6 +60,11 @@ class RiskThreshold:
         ):
             value = getattr(self, field)
             if not 0 <= value < 1: raise ValueError("Invalid " + field)
+        if self.maximum_total_game_risk_fraction is not None:
+            if not 0 < self.maximum_total_game_risk_fraction <= 1:
+                raise ValueError("Invalid maximum_total_game_risk_fraction")
+        if not isinstance(self.require_positive_leg_ev,bool):
+            raise ValueError("require_positive_leg_ev must be boolean")
         if self.minimum_ticket_stake < 0: raise ValueError("Invalid minimum stake")
 
 
@@ -175,10 +186,11 @@ def enumerate_tickets(legs: list[dict], risk: RiskThreshold) -> pd.DataFrame:
             executable_stress_decimal=decimal*(1-risk.per_leg_price_haircut)**size
             ev=p*decimal-1
             conservative_ev=q*executable_stress_decimal-1
-            # A parlay with a mispriced leg is not automatically rescued by
-            # a second leg. Assess ticket AND leg price-adjusted EV.
-            weak_leg=any(x["conservative_leg_ev"] <= 0 for x in group)
-            status=("LEG_NOT_VALUE" if weak_leg else
+            # V3 audits unfavorable individual legs without vetoing a
+            # ticket that still passes the conservative *combined* EV test.
+            # Legacy V2 keeps the individual-leg veto via a policy flag.
+            weak_legs=sum(x["conservative_leg_ev"] <= 0 for x in group)
+            status=("LEG_NOT_VALUE" if risk.require_positive_leg_ev and weak_legs else
                     "JOINT_PROBABILITY_BELOW_THRESHOLD" if q<risk.min_joint_probability else
                     "CONSERVATIVE_EV_BELOW_THRESHOLD" if conservative_ev<risk.min_conservative_ev else
                     "ELIGIBLE_RESEARCH")
@@ -189,6 +201,7 @@ def enumerate_tickets(legs: list[dict], risk: RiskThreshold) -> pd.DataFrame:
                 "calculated_decimal_odds":decimal,
                 "price_stressed_decimal_odds":executable_stress_decimal,
                 "estimated_ev":ev,"conservative_ev":conservative_ev,
+                "weak_leg_count":int(weak_legs),
                 "status":status, "stake":0.,
             })
     return pd.DataFrame(tickets)
@@ -213,6 +226,12 @@ def allocate_tickets(tickets: pd.DataFrame, risk: RiskThreshold,
     game_cap=round(100*risk.bankroll*risk.maximum_game_risk_fraction)
     min_cents=max(1,round(100*risk.minimum_ticket_stake))
     occupied={g:round(100*v) for g,v in exposure.items()}
+    # V3 reserves a separate game-level budget for parlay tickets while also
+    # counting any straight bet against a larger combined per-game ceiling.
+    separate_cap = risk.maximum_total_game_risk_fraction is not None
+    parlay_occupied = {}
+    combined_cap = (round(100*risk.bankroll*risk.maximum_total_game_risk_fraction)
+                    if separate_cap else None)
     # Rank by conservative risk-adjusted Kelly signal and joint hit chance.
     eligible=out.loc[out.status.eq("ELIGIBLE_RESEARCH")].copy()
     eligible["ranking"]=eligible.apply(
@@ -223,8 +242,14 @@ def allocate_tickets(tickets: pd.DataFrame, risk: RiskThreshold,
     for idx,ticket in eligible.iterrows():
         if weekly_remaining < min_cents:break
         ids=ticket.game_ids
-        available=min([weekly_remaining,ticket_cap]+
-            [max(0,game_cap-occupied.get(g,0)) for g in ids])
+        if separate_cap:
+            available=min(
+                [weekly_remaining,ticket_cap]
+                +[max(0,game_cap-parlay_occupied.get(g,0)) for g in ids]
+                +[max(0,combined_cap-occupied.get(g,0)) for g in ids])
+        else:
+            available=min([weekly_remaining,ticket_cap]+
+                [max(0,game_cap-occupied.get(g,0)) for g in ids])
         # Positive-EV Kelly is a total single-bet exposure guide, not additive
         # across correlated tickets. The sleeve/game caps dominate this guide.
         fractional_kelly=(ticket.conservative_ev/
@@ -234,14 +259,27 @@ def allocate_tickets(tickets: pd.DataFrame, risk: RiskThreshold,
         if amount<min_cents:continue
         out.at[idx,"stake"]=amount/100
         weekly_remaining-=amount
-        for gid in ids:occupied[gid]=occupied.get(gid,0)+amount
+        for gid in ids:
+            occupied[gid]=occupied.get(gid,0)+amount
+            if separate_cap:
+                parlay_occupied[gid]=parlay_occupied.get(gid,0)+amount
     if out.stake.sum() > risk.bankroll*risk.weekly_parlay_risk_fraction+.001:
         raise AssertionError("Weekly risk limit violated")
-    for gid,amount in occupied.items():
-        if amount > game_cap and gid not in exposure:
-            raise AssertionError("Game exposure limit violated")
-        if gid in exposure and amount > max(game_cap,round(100*exposure[gid])):
-            raise AssertionError("Exceeded per-game incremental risk cap")
+    if separate_cap:
+        for gid,amount in parlay_occupied.items():
+            if amount > game_cap:
+                raise AssertionError("Parlay-only per-game exposure violated")
+        for gid,amount in occupied.items():
+            # The existing straight portfolio may already exceed the combined
+            # cap: such positions cannot receive additional parlay exposure.
+            if amount > max(combined_cap,round(100*exposure.get(gid,0))):
+                raise AssertionError("Combined straight/parlay game cap violated")
+    else:
+        for gid,amount in occupied.items():
+            if amount > game_cap and gid not in exposure:
+                raise AssertionError("Game exposure limit violated")
+            if gid in exposure and amount > max(game_cap,round(100*exposure[gid])):
+                raise AssertionError("Exceeded per-game incremental risk cap")
     return out
 
 
@@ -282,6 +320,7 @@ def evaluate(raw_predictions: pd.DataFrame, straight: pd.DataFrame,
                 "conservative_probability":t.risk_adjusted_joint_probability,
                 "calculated_decimal_odds":t.calculated_decimal_odds,
                 "estimated_ev":t.estimated_ev,"conservative_ev":t.conservative_ev,
+                "weak_leg_count":t.weak_leg_count,
                 "stake":t.stake,"won":won,"profit":profit,
             })
         week_audit=audit[-len(tickets):] if len(tickets) else []

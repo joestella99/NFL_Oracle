@@ -1,3 +1,5 @@
+> **PROMOTED POLICY — October 16, 2026:** The user selected the sensitivity variant with conservative **combined ticket EV >= +2%**, **1% gross-price haircut per leg**, no mandatory individual-leg EV veto, a separate parlay-game cap ($20) and combined straight+parlay game cap ($120). The official default is now `scripts/parlay_portfolio_v3.py` using `config/parlay_policy.json`. The older variant remains available for historical comparison, and these retrospective ROI figures remain exploratory.
+
 # Parlay V2 selection standards audit — October 16, 2026
 
 **Research only.** Source: successful run [38948326895](https://github.com/joestella99/NFL_Oracle/actions/runs/38948326895), `nfl-oracle-ten-year-replay` artifact, `parlay_portfolio_v2/all_combinations_and_exposure.csv`, `ten_year_ml_spread_parlays/straight_bets.csv`. All 2016–2025 years were previously inspected in development. The odds are historically compounded, **not** verified as executable at one bookmaker and instant.
