@@ -1,0 +1,18 @@
+{
+  "policy_id": "nfl-oracle-v6-conviction-2026-10-16",
+  "status": "experimental_percentage_research",
+  "thresholds": {
+    "min_leg_win_probability": 0.65,
+    "min_leg_ev": 0.0,
+    "min_ticket_win_probability": 0.40,
+    "min_ticket_ev": 0.005,
+    "max_legs": 3
+  },
+  "notes": [
+    "Prespecified research defaults, not selected by historical ROI optimization.",
+    "Small positive model edges may enter the confidence view even if V5 stress fails.",
+    "V5 value qualifications remain separately visible and unchanged.",
+    "User likes affect preference ranking only, never model probabilities or eligibility.",
+    "No minimum payout target, compulsory ticket, stake sizes, or bankroll allocation."
+  ]
+}
