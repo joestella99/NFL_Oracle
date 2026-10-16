@@ -155,14 +155,17 @@ def main():
         ("parlay_candidates.csv",tickets),
         ("oos_calibration_inputs.csv",history.loc[history.model.eq("baseline")])):
         frame.to_csv(out/filename,index=False)
+    def safe_mean(x):
+        value=float(x.mean())
+        return value if np.isfinite(value) else None
     aggregate=[]
     for (model,view),sub in summary.groupby(["model","view"]):
         n=int(sub.bets.sum())
         aggregate.append(dict(model=model,view=view,bets=n,
-          mean_annual_proxy_roi=float(sub.unit_roi_proxy.mean()),
+          mean_annual_proxy_roi=safe_mean(sub.unit_roi_proxy),
           years_with_picks=int(sub.unit_roi_proxy.notna().sum()),
-          recent_2023_2025_mean_annual_roi=float(
-              sub.loc[sub.season.ge(2023),"unit_roi_proxy"].mean())))
+          recent_2023_2025_mean_annual_roi=safe_mean(
+              sub.loc[sub.season.ge(2023),"unit_roi_proxy"])))
     report=dict(method="Preceding seasons OOS football/margin forecasts only; "
         "all four straight sides and diversified cross-game ML/ATS parlays",
         retrospective_proxies=aggregate,
