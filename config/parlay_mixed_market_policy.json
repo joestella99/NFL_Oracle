@@ -1,0 +1,23 @@
+{
+  "policy_id": "nfl-oracle-parlay-v5-2026-10-16-ml-ats-mixed",
+  "status": "official_mixed_market_percentage_policy",
+  "scope": "percentage-only cross-game ML, ATS and mixed parlays, no dollar allocation",
+  "thresholds": {
+    "min_ml_leg_probability": 0.6,
+    "min_ats_leg_win_probability": 0.42,
+    "min_ticket_all_win_probability": 0.15,
+    "min_ticket_conservative_ev": 0.02,
+    "base_probability_haircut": 0.02,
+    "disagreement_haircut_weight": 0.2,
+    "per_leg_price_haircut": 0.01,
+    "max_legs": 4
+  },
+  "policy_notes": [
+    "Every game audits home/away ML and home/away spread, but combination search chooses the model favorite ML and highest-EV ATS side per game.",
+    "Spread pushes void that leg in a parlay and are included in gross-return probability.",
+    "Two or more legs must reference different games, regardless of market kind.",
+    "No bankroll, stake size, arbitrary fixed number of tickets or forced parlay.",
+    "Current 2026 replay is restricted to completed games; upcoming Sunday requires contemporaneous single-book h2h+spread prices.",
+    "All historical moneylines and spread lines are price proxies unless independently timestamp-verified."
+  ]
+}

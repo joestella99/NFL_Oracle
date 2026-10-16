@@ -1,3 +1,23 @@
+# NFL Oracle V5 — ML + spread + mixed parlays (percentage-only)
+
+**Current cross-market parlay selection engine:** [`scripts/parlay_mixed_market_v5.py`](scripts/parlay_mixed_market_v5.py), configured in [`config/parlay_mixed_market_policy.json`](config/parlay_mixed_market_policy.json). This expands the official percentage-only 2026 review beyond moneyline-only tickets. Existing V1–V4 research replay scripts remain available; neither sportsbook actions nor bankroll/stake allocation are performed.
+
+**What it does:** For each scheduled NFL game, audit both moneylines and both spread sides (four potential single-leg markets). For tractability the combinatorial search promotes the model-favored ML and best expected-value spread side from each game; generate all cross-game 2-, 3-, and 4-leg combinations of ML+ML, ML+ATS, ATS+ATS (and additional mixed combinations). Rejected combinations remain in the audit. A spread win can occur when the team loses outright. Margin-model spread probabilities come from strictly earlier-season out-of-sample score-margin residuals, with discrete points and explicit ATS push probability. A pushed spread leg refunds/removes only its own multiplier; another losing leg still loses the whole parlay. No two picks from the same game are combined.
+
+**Research criteria:** $0 funding or bankroll inputs; minimum 60% win probability for the model-favored ML side, 42% spread-cover probability for the chosen ATS side, minimum 15% conservative all-leg-win probability, minimum **+2% conservative combined expected value**, and 1% conservative gross price stress per leg. All candidate legs/tickets report probabilities and selection reasons. *These thresholds have not been shown to provide a betting edge.*
+
+**2026 completed game audit:**
+
+`PYTHONPATH=src:. python scripts/parlay_mixed_market_v5.py --forecasts results/parlay_2026_percentages/model_probabilities.csv --prior-margins results/margin_model_comparison/margin_predictions.csv`
+
+**Upcoming schedule / Sunday preview** (explicitly NOT the completed-game historical replay): [`scripts/parlay_live_mixed.py`](scripts/parlay_live_mixed.py) requires either a timestamped same-book ML+ATS quotes CSV (`game_id,bookmaker,captured_at,home_moneyline,away_moneyline,spread_line,home_spread_odds,away_spread_odds`; `spread_line` is home expected winning margin) or a live Odds API key `ODDS_API_KEY` with `--live-odds`:
+
+`PYTHONPATH=src:. python scripts/parlay_live_mixed.py --as-of 2026-10-16T15:38:00-04:00 --quotes-csv my_verified_prices.csv --prior-margins results/margin_model_comparison/margin_predictions.csv`
+
+Or swap `--quotes-csv ...` for `--live-odds` with the key set. No historical 2026 result is used as a future outcome; unfinished games are labeled unknown. The reference forecast uses historical form and market rather than the full historical injury/PBP ensemble; **do not conflate these models**. Quote data and live bookmaker parlay acceptance can differ; no executable tickets or guaranteed positive returns are implied.
+
+---
+
 # 2026 personnel-aware NFL Oracle: percentage-only parlay selection
 
 **Active percent-only selection:** `scripts/parlay_2026_review.py` reads [`config/parlay_percentage_policy.json`](config/parlay_percentage_policy.json). This carries forward the approved **+2% conservative combined-ticket EV / 1% payout deterioration per leg** standard, with no individual-leg EV veto and **NO bankroll, stake or dollar optimization**. Every 2..N cross-game combination is evaluated from estimated probabilities, uncertainty and historical pricing; qualifying is NOT a recommendation to place a real wager.
