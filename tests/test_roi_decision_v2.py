@@ -13,7 +13,7 @@ def test_discrete_margin_push_and_both_sides_cover():
 def test_no_vig_market_probabilities_sum_to_one():
     h,a=market_probs(-400,300)
     assert np.isclose(h+a,1.)
-    assert np.isclose(h,.8)
+    assert np.isclose(h,.8/(.8+.25))
 
 def test_no_bets_when_none_qualify():
     d=pd.DataFrame([dict(game_id='x',season=2025,week=1,policy='balanced',
