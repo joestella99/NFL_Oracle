@@ -163,8 +163,8 @@ def simulate(universe,singles,bankroll=BASE_RESEARCH_BANKROLL):
                 "viable_probability_combinations":len(candidates),
                 "conservative_positive_ev_count":len(favorable),
                 "max_legs_considered":max((x["leg_count"] for x in candidates),default=0),
-                "tickets_funded":len(picked),"stake":round(sum(x["stake"] for x in picked),2),
-                "profit":round(sum(x["profit"] for x in picked),2),
+                "tickets_funded":len(picked),"stake":float(sum(x["stake"] for x in picked)),
+                "profit":float(sum(x["profit"] for x in picked)),
                 "budget":budget,
                 "overlap_with_straights_count":sum(x["overlaps_straight"] for x in picked),
             })
