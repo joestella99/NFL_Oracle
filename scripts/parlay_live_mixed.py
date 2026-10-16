@@ -136,7 +136,8 @@ def check_quotes(quotes:pd.DataFrame,schedule:pd.DataFrame,
 
 
 def build_preview(schedules:pd.DataFrame,quotes:pd.DataFrame,prior_margins:pd.DataFrame,
-                  asof:pd.Timestamp,policy,conviction_policy=None,liked=frozenset()):
+                  asof:pd.Timestamp,policy,conviction_policy=None,liked=frozenset(),
+                  strategy="v6", calibration_history=None):
     schedule=schedules.loc[schedules.game_type.eq("REG")].copy()
     schedule["kickoff_utc"]=kickoff_utc(schedule)
     cutoff=asof.tz_convert("America/New_York").tz_localize(None)
@@ -163,7 +164,11 @@ def build_preview(schedules:pd.DataFrame,quotes:pd.DataFrame,prior_margins:pd.Da
         lambda r:no_vig_home(r.home_moneyline,r.away_moneyline),axis=1)
     p=upcoming.market_home_prob.clip(1e-6,1-1e-6)
     upcoming["market_logit"]=np.log(p/(1-p))
-    winner=fit_model(training,feature_cols=FEATURES)
+    # Match the historical OOS baseline training weights used by backtest_ten_years.
+    now_year=int(asof.tz_convert("America/New_York").year)
+    sample_weights=np.where(training.season.eq(now_year),4.,
+        np.where(training.season.eq(now_year-1),1.5,1.))
+    winner=fit_model(training,sample_weight=sample_weights,feature_cols=FEATURES)
     upcoming["pregame_form_home_prob"]=winner.predict_proba(
         upcoming[FEATURES])[:,1]
     # Margin model uses same pregame form+spread feature family used by the
@@ -182,6 +187,51 @@ def build_preview(schedules:pd.DataFrame,quotes:pd.DataFrame,prior_margins:pd.Da
     upcoming["true_margin"]=float("nan")
     upcoming["season"]=upcoming.season.astype(int)
     upcoming["week"]=upcoming.week.astype(int)
+    if strategy=="v7":
+        from nfl_oracle.decision_v7 import (
+            V7Policy, Calibration, fit_calibration, evaluate_slate)
+        v7_policy=V7Policy()
+        cals={}
+        for year in sorted(upcoming.season.unique()):
+            if calibration_history is not None:
+                h=calibration_history.copy()
+                if "model" in h:
+                    h=h.loc[h.model.eq("baseline")]
+                cals[int(year)]=fit_calibration(h,int(year))
+            else:
+                # Fallback cannot manufacture market-beating model skill.
+                m=prior_margins.loc[prior_margins.season.lt(int(year))]
+                errors=(m.true_margin-m.spread_line).dropna().to_numpy(float)
+                cals[int(year)]=Calibration.market_fallback(errors)
+        upcoming["model_home_prob"]=upcoming["pregame_form_home_prob"]
+        # Live evaluation never uses future final results, even if schedule
+        # files have retrospectively populated scores.
+        singles,parlays,liked_audit=evaluate_slate(
+            upcoming,cals,policy=v7_policy,liked=liked,live_asof=asof)
+        funnel=(singles.groupby(["season","week","bookmaker"],as_index=False)
+           .agg(straight_sides=("selection","size"),
+                straight_model_edges=("raw_ev",lambda x:int((x>0).sum())))
+                if len(singles) else pd.DataFrame())
+        report=dict(status="V7_PREGAME_CALIBRATED_PERCENTAGE_RESEARCH",
+            asof_utc=asof.isoformat(),
+            games=int(upcoming.game_id.nunique()),books=int(upcoming.bookmaker.nunique()),
+            singles=int(len(singles)),parlays=int(len(parlays)),
+            raw_positive_straight_sides=int(singles.raw_ev.gt(0).sum()) if len(singles) else 0,
+            raw_positive_parlays=int(parlays.raw_ev.gt(0).sum()) if len(parlays) else 0,
+            featured_parlays=int(parlays.featured_rank.notna().sum()) if len(parlays) else 0,
+            forecast_calibration={str(k):dict(verified=v.calibrated,
+                 prior_games=v.training_games,last_training_season=v.last_training_season,
+                 moneyline_football_weight=v.moneyline_weight,
+                 margin_football_weight=v.margin_weight) for k,v in cals.items()},
+            limitation=[
+               "Without historical OOS calibration input V7 falls back to market probabilities; it cannot claim a model edge.",
+               "Individual captured prices are not verified accepted sportsbook parlay offers.",
+               "Cross-game leg probabilities are multiplied under an independence approximation.",
+               "Only 2-3 legs by default; all candidate combinations remain audited.",
+               "Liked picks change display priority, never forecast probabilities.",
+               "No wagers placed or stake sizing."
+            ])
+        return singles,parlays,funnel,report
     # Compare each SAME-BOOK slate individually; never silently cross books.
     alllegs=[];alltickets=[];allweeks=[]
     for bookmaker,g in upcoming.groupby("bookmaker"):
@@ -231,7 +281,8 @@ def main():
     source.add_argument("--live-odds",action="store_true")
     a.add_argument("--schedules-csv")
     a.add_argument("--prior-margins",required=True)
-    a.add_argument("--strategy",choices=("v5","v6"),default="v6")
+    a.add_argument("--strategy",choices=("v5","v6","v7"),default="v7")
+    a.add_argument("--calibration-csv",help="Earlier-season OOS calibration inputs from results/decision_v7/oos_calibration_inputs.csv")
     a.add_argument("--liked-picks",help="CSV with game_id,side,kind; changes preference rank only")
     a.add_argument("--output",default="results/parlay_pregame_mixed")
     args=a.parse_args()
@@ -246,12 +297,24 @@ def main():
     quotes=(fetch_live_quotes(schedules) if args.live_odds else pd.read_csv(args.quotes_csv))
     legs,tickets,weeks,report=build_preview(
         schedules,quotes,pd.read_csv(args.prior_margins),asof,policy,
-        conviction_policy=conviction_policy if args.strategy=="v6" else None,liked=liked)
+        conviction_policy=conviction_policy if args.strategy=="v6" else None,liked=liked,
+        strategy=args.strategy,
+        calibration_history=(pd.read_csv(args.calibration_csv) if args.calibration_csv else None))
     report["policy_id"]=policy_id
     report["conviction_policy_id"]=conviction_id if args.strategy=="v6" else None
+    report["strategy"]=args.strategy
     root=Path(args.output);root.mkdir(parents=True,exist_ok=True)
     (root/"report.json").write_text(json.dumps(report,indent=2))
     legs.to_csv(root/"market_side_audit.csv",index=False)
+    if args.strategy=="v7":
+        legs.to_csv(root/"straight_picks_all_four_sides.csv",index=False)
+        tickets.to_csv(root/"unified_v7_parlay_audit.csv",index=False)
+        if len(tickets):
+            tickets.loc[tickets.featured_rank.notna()].sort_values(
+                ["bookmaker","week","featured_rank"]).to_csv(root/"diversified_parlay_board.csv",index=False)
+            tickets.sort_values(["bookmaker","week","preferred_rank"]).to_csv(
+                root/"liked_and_confidence_board.csv",index=False)
+        legs.loc[legs.liked].to_csv(root/"liked_straight_picks.csv",index=False)
     export(tickets,root/"all_mixed_parlays.csv")
     weeks.to_csv(root/"weekly_funnel.csv",index=False)
     if len(tickets):
