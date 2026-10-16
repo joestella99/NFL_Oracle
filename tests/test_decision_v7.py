@@ -5,7 +5,7 @@ import pytest
 
 from nfl_oracle.decision_v7 import (
     V7Policy, Calibration, fit_calibration, game_markets,
-    evaluate_slate, _ticket,
+    evaluate_slate, _ticket, _candidate_options,
 )
 
 
@@ -168,3 +168,21 @@ def test_reject_stale_missing_or_duplicated_quotes():
         evaluate_slate(quotes(),cal(),live_asof="2026-10-16T16:00:00")
     with pytest.raises(ValueError):
         run(pd.concat([quotes(),quotes().head(1)],ignore_index=True))
+
+
+def test_admissible_liked_alternative_is_not_lost_to_shortlist_truncation():
+    legs=[
+        dict(game_id="x",kind="ML",side="home",selection="x:home:ML",
+             candidate=True,win_probability=.85,raw_ev=.04),
+        dict(game_id="x",kind="ML",side="away",selection="x:away:ML",
+             candidate=True,win_probability=.15,raw_ev=.005),
+        dict(game_id="x",kind="ATS",side="home",selection="x:home:ATS",
+             candidate=True,win_probability=.53,raw_ev=.03),
+        dict(game_id="x",kind="ATS",side="away",selection="x:away:ATS",
+             candidate=True,win_probability=.47,raw_ev=.005),
+    ]
+    baseline=_candidate_options(legs,V7Policy())
+    assert "x:away:ML" not in {r["selection"] for r in baseline}
+    liked=_candidate_options(legs,V7Policy(),frozenset({"x:away:ML"}))
+    assert "x:away:ML" in {r["selection"] for r in liked}
+    assert any(r["raw_ev"]==.005 for r in liked)
