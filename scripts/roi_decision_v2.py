@@ -165,6 +165,8 @@ def candidates(winner_predictions, margin_predictions, first=2021):
 def allocate(candidates_df, risk_budget=MAX_WEEKLY_RISK, max_bets=MAX_BETS):
     bets = []
     for (_, _, policy), week in candidates_df.groupby(["season", "week", "policy"]):
+        if not week.qualifies.any():
+            continue
         choice = (
             week.loc[week.qualifies]
             .sort_values(["risk_score", "estimated_ev", "game_id", "kind", "side"],
