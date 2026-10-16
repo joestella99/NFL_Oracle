@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from scripts.parlay_round_robin import (
     generate_round_robins, allocate_round_robins, simulate,
-    _size_sleeve, MIN_JOINT_WIN_PROB,
+    _size_sleeve, MIN_JOINT_WIN_PROB, audit_correlated_exposure,
 )
 
 def candidates(n=5,season=2025,week=1,policy="risk_tolerant"):
@@ -57,3 +57,38 @@ def test_overlapping_straights_and_parlay_tickets_possible():
     assert q.leg_count.max()>=2
     assert q.games.str.contains("game0").sum()>1
     assert q.games.str.contains("game1").sum()>1
+
+def test_per_game_exposure_audit_counts_shared_tickets_once_per_leg():
+    t=pd.DataFrame([
+        dict(policy="risk_tolerant",season=2025,week=1,mode="exploratory",
+             games="game0 | game1",sides="home | away",stake=1.),
+        dict(policy="risk_tolerant",season=2025,week=1,mode="exploratory",
+             games="game0 | game2",sides="home | home",stake=2.),
+        dict(policy="risk_tolerant",season=2025,week=1,mode="exploratory",
+             games="game1 | game2",sides="away | home",stake=3.),
+    ])
+    s=pd.DataFrame([dict(game_id="game0",season=2025,week=1,
+        policy="risk_tolerant",side="home",stake=40.)])
+    audit=audit_correlated_exposure(t,s)
+    a=audit[audit.game_id.eq("game0")].iloc[0]
+    assert a.parlay_tickets_containing_leg==2
+    assert a.parlay_stake_exposed==3
+    assert a.weekly_parlay_staked==6
+    assert a.pct_parlay_budget_at_risk==.5
+    assert a.parlay_pnl_if_leg_loses==-3
+    assert a.straight_stake_on_same_game==40
+    assert a.straight_side=="home"
+    # Overlap means per-game exposure sums exceed the actual $6 risk sleeve.
+    assert audit.parlay_stake_exposed.sum()==12
+    assert audit.straight_stake_on_same_game.sum()==40
+
+def test_positive_staking_matches_edge_to_same_ticket_payout():
+    options=[
+        dict(conservative_ev=.20,conservative_joint_probability=.20,
+             calculated_decimal_odds=21.),
+        dict(conservative_ev=.12,conservative_joint_probability=.60,
+             calculated_decimal_odds=2.),
+    ]
+    # Candidate 2 has a larger EV-to-profit ratio despite lower absolute EV:
+    # 25% Kelly on 0.12, not on 0.20/20.
+    assert _size_sleeve(options,1000,"positive_only")==30
