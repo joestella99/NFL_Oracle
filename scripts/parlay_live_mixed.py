@@ -318,8 +318,9 @@ def main():
     export(tickets,root/"all_mixed_parlays.csv")
     weeks.to_csv(root/"weekly_funnel.csv",index=False)
     if len(tickets):
-        tickets.sort_values(["conservative_ev","estimated_all_win_probability"],
-            ascending=[False,False]).head(100).to_csv(
+        sort_by=(["stressed_ev","full_payout_win_probability"] if args.strategy=="v7"
+                 else ["conservative_ev","estimated_all_win_probability"])
+        tickets.sort_values(sort_by,ascending=[False,False]).head(100).to_csv(
             root/"top_100_including_rejected.csv",index=False)
         if args.strategy=="v6":
             from nfl_oracle.conviction import liked_pick_audit
