@@ -100,7 +100,7 @@ jobs:
         run: PYTHONPATH=src:. python scripts/roi_decision_v2.py --winner-predictions results/ten_year_comparison/predictions.csv --margin-predictions results/margin_model_comparison/margin_predictions.csv
       - name: Bootstrap risk-aware ROI and analyze opponent advantages in misses
         run: PYTHONPATH=src:. python scripts/roi_stability.py --market-checks results/roi_decision_v2/all_market_checks.csv --bets results/roi_decision_v2/bets.csv
-      - name: Uncapped full-budget mixed-market singles with separately sized synthetic cross-game parlays
+      - name: Uncapped full-budget mixed-market singles with calculated cross-game parlay payouts
         run: PYTHONPATH=src:. python scripts/roi_full_budget_parlays.py --winner-predictions results/ten_year_comparison/predictions.csv --margin-predictions results/margin_model_comparison/margin_predictions.csv
       - uses: actions/upload-artifact@v4
         if: always()
