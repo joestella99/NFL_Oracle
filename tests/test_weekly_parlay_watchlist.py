@@ -42,8 +42,10 @@ def test_incompatible_or_future_quotes_cannot_be_compounded():
     assert pick.empty
 
 def test_negative_ev_remains_watch_only_and_zero_stake():
-    q=pd.DataFrame([quote("a",model=.50),quote("b",model=.50)])
-    pick,_=parlay_watchlist(q,pd.DataFrame({"game_id":[]}),NOW,min_leg_probability=.50)
+    q=pd.DataFrame([quote("a",model=.70),quote("b",model=.70)])
+    q["home_moneyline"]=-400
+    q["away_moneyline"]=300
+    pick,_=parlay_watchlist(q,pd.DataFrame({"game_id":[]}),NOW)
     assert len(pick)==1
     assert pick.iloc[0].suggested_extra_stake==0
     assert pick.iloc[0].research_status=="WATCH_ONLY_UNVERIFIED_EDGE"
