@@ -62,8 +62,8 @@ def empirical_cover(margin_forecast, line, earlier_residuals):
     )
 
 
-def candidates(winner_predictions, margin_predictions, first=2021):
-    calibr = prepare(winner_predictions)
+def candidates(winner_predictions, margin_predictions, first=2021, calibration_first=2019):
+    calibr = prepare(winner_predictions, first_year=calibration_first)
     primary = winner_predictions.loc[
         winner_predictions.model.eq("baseline"),
         ["game_id", "market_home_prob"] + FOOTBALL_SIGNALS,
