@@ -80,6 +80,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/spread_comparison.py --predictions results/ten_year_comparison/predictions.csv --output results/spread_comparison
       - name: Train point margin model and test separate ATS slate against moneylines
         run: PYTHONPATH=src:. python scripts/margin_model_comparison.py --winner-predictions results/ten_year_comparison/predictions.csv --output results/margin_model_comparison
+      - name: Odds-aware probability calibration and later-season evaluation
+        run: PYTHONPATH=src:. python scripts/odds_aware_alternatives.py --predictions results/ten_year_comparison/predictions.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -93,6 +95,7 @@ jobs:
             results/injury_ablation/
             results/spread_comparison/
             results/margin_model_comparison/
+            results/odds_aware_alternatives/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
