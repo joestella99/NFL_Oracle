@@ -37,7 +37,7 @@ def capped_weights(weights, total_cents, cap_cents):
         w=raw[ix]
         if w.sum()<=0:w=np.ones(len(ix))
         suggested=distribute_cents(w,remaining/100.)
-        proposed=(suggested*100).astype(int)
+        proposed=np.rint(suggested*100).astype(int)
         capacity=cap_cents-allocation[ix]
         blocked=proposed>=capacity
         if blocked.any():
