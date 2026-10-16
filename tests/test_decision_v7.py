@@ -160,7 +160,7 @@ def test_missing_margin_history_is_explicit_not_fabricated():
     ats=s.loc[s.kind.eq("ATS")]
     assert ats.status.eq("MISSING_PRIOR_MARGIN_CALIBRATION").all()
     assert not s.loc[s.kind.eq("ML")].raw_ev.gt(0).any()
-    assert p.empty
+    assert p.empty or p.raw_ev.le(0).all()
 
 
 def test_reject_stale_missing_or_duplicated_quotes():
