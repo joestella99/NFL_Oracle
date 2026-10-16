@@ -62,6 +62,25 @@ their decimal equivalents. The extra-stake research amount ranges from
 $2 to $15 only when its *estimated* return is positive; negative-estimated-
 return combinations are labeled **watch only** with $0 suggested.
 
+The expanded research parlay engine evaluates **all cross-game 2-to-N combinations**,
+without a maximum number of legs or tickets, and allows overlapping legs
+across round-robin tickets and overlap with straight candidates. Candidates
+must use one bookmaker and quote snapshots no more than 60 minutes apart.
+Each opportunity gets its own estimated EV and a conservative probability
+adjustment. Only conservatively positive-EV opportunities qualify for a
+nonzero research stake. All qualifying tickets share one adaptive exposure
+sleeve, sized as a fraction of a separate configurable bankroll:
+
+```sh
+nfl-oracle shortlist --as-of 2026-10-18T11:00 --odds-csv my_quotes.csv --parlay-bankroll 1000
+```
+
+An unusually strong slate can increase aggregate parlay exposure, rather than
+being arbitrarily capped at $15. The bankroll itself remains a **risk limit**;
+it is not automatically spent. Many combinations of overpriced favorites can
+all remain watch-only. Overlapping parlays are highly correlated, and the
+product of independent leg probabilities is only an approximation.
+
 This is not a verified profitable strategy or a validated live moneyline
 model; live shortlist probabilities use the CLI's simpler rolling-form model,
 not the richer historical combined-portfolio predictor. Historical calculated
