@@ -88,6 +88,10 @@ jobs:
         run: PYTHONPATH=src:. python scripts/mixed_market_portfolio.py --winner-predictions results/ten_year_comparison/predictions.csv --margin-predictions results/margin_model_comparison/margin_predictions.csv
       - name: Audit losing selections against pregame football features
         run: PYTHONPATH=src:. python scripts/miss_football_features.py --predictions results/ten_year_comparison/predictions.csv --selected-bets results/mixed_market_portfolio/selected_bets.csv
+      - name: Test rushing and sustainable EPA feature families
+        run: PYTHONPATH=src:. python scripts/football_feature_ablation.py --predictions results/ten_year_comparison/predictions.csv
+      - name: Test walk-forward spread margin residual correction
+        run: PYTHONPATH=src:. python scripts/spread_residual_correction.py --margin-predictions results/margin_model_comparison/margin_predictions.csv --winner-predictions results/ten_year_comparison/predictions.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -105,6 +109,8 @@ jobs:
             results/two_sided_spreads/
             results/mixed_market_portfolio/
             results/miss_football_features/
+            results/football_feature_ablation/
+            results/spread_residual_correction/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
