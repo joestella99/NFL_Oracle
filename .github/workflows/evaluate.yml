@@ -108,6 +108,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/parlay_round_robin.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv --output results/ten_year_round_robins
       - name: Selective value clustered-parlay ten-year comparison
         run: PYTHONPATH=src:. python scripts/selective_parlays.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
+      - name: Opportunity breadth capital allocation ten-year check
+        run: PYTHONPATH=src:. python scripts/opportunity_breadth.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --baseline results/ten_year_ml_spread_parlays/straight_bets.csv
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -135,6 +137,7 @@ jobs:
             results/ten_year_ml_spread_parlays/
             results/ten_year_round_robins/
             results/selective_parlays/
+            results/opportunity_breadth/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
