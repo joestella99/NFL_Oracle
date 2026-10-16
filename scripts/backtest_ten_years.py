@@ -93,7 +93,14 @@ def main():
     pbp=nfl.load_pbp(seasons).select(
       ['game_id','posteam','defteam','epa','play_type','passer_player_id']).to_pandas()
     report,table=compare(games,pbp,args.first,args.last)
+    # True 2016 start for 10-year portfolio research requires earlier
+    # 2014/2015 *out-of-sample* winner forecasts for rolling calibration.
+    # Keep the ordinary published 2016-25 replay exactly unchanged.
+    warm_games=games.loc[games.season.between(2013,2015)].copy()
+    warm_pbp=pbp.loc[pbp.game_id.isin(warm_games.game_id)].copy()
+    _,warmup=compare(warm_games,warm_pbp,first=2014,last=2015)
     output=Path(args.output);output.mkdir(parents=True,exist_ok=True)
+    warmup.to_csv(output/'warmup_predictions_2014_2015.csv',index=False)
     (output/'report.json').write_text(json.dumps(report,indent=2))
     pd.DataFrame(report['per_season']).to_csv(output/'season_summary.csv',index=False)
     table.to_csv(output/'predictions.csv',index=False)
