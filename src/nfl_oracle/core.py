@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from nfl_oracle.team_identity import franchise_key
 
 FORM_WINDOW = 8
 BASE_POINTS = 22.0
@@ -62,7 +63,7 @@ def make_features(games: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, game in g.iterrows():
         home, away = str(game['home_team']), str(game['away_team'])
-        h, a = history[home], history[away]
+        h, a = history[franchise_key(home)], history[franchise_key(away)]
         def get_form(d):
             pf = _mean(d, 0, BASE_POINTS)
             pa = _mean(d, 1, BASE_POINTS)
@@ -102,8 +103,8 @@ def make_features(games: pd.DataFrame) -> pd.DataFrame:
         row['home_win'] = (int(hs > aps) if completed else np.nan)
         rows.append(row)
         if completed:
-            history[home].append((float(hs), float(aps), float(hs>aps)))
-            history[away].append((float(aps), float(hs), float(aps>hs)))
+            history[franchise_key(home)].append((float(hs), float(aps), float(hs>aps)))
+            history[franchise_key(away)].append((float(aps), float(hs), float(aps>hs)))
     return pd.DataFrame(rows)
 
 

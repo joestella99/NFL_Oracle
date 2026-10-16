@@ -2,6 +2,7 @@
 from collections import defaultdict, deque
 import numpy as np
 import pandas as pd
+from nfl_oracle.team_identity import franchise_key
 
 ADVANCED_FEATURES = [
     'epa_offense_diff', 'epa_defense_diff', 'epa_matchup_diff',
@@ -15,6 +16,8 @@ def aggregate_pbp(pbp: pd.DataFrame) -> pd.DataFrame:
     plays=pbp.loc[pbp['play_type'].isin(['pass','run'])].copy()
     plays['epa']=pd.to_numeric(plays['epa'],errors='coerce')
     plays=plays.dropna(subset=['game_id','posteam','defteam','epa'])
+    plays['posteam']=plays['posteam'].map(franchise_key)
+    plays['defteam']=plays['defteam'].map(franchise_key)
     if plays.empty:
         return pd.DataFrame(columns=['game_id','team','off_epa','def_epa','qb_epa','qb_share'])
     offense=plays.groupby(['game_id','posteam'],as_index=False).agg(
@@ -41,7 +44,11 @@ def make_pregame_advanced(games: pd.DataFrame, pbp: pd.DataFrame, window: int=8)
     if window < 1: raise ValueError('window must be positive')
     summary=aggregate_pbp(pbp)
     lookup={(str(r.game_id),str(r.team)):r for r in summary.itertuples(index=False)}
-    ordered=games[['game_id','gameday','home_team','away_team']].drop_duplicates('game_id').copy()
+    has_scores={'home_score','away_score'}.issubset(games.columns)
+    columns=['game_id','gameday','home_team','away_team']
+    if has_scores:
+        columns+=['home_score','away_score']
+    ordered=games[columns].drop_duplicates('game_id').copy()
     ordered['gameday']=pd.to_datetime(ordered['gameday']).dt.normalize()
     history=defaultdict(lambda:deque(maxlen=window))
     def avg(team,key):
@@ -50,7 +57,7 @@ def make_pregame_advanced(games: pd.DataFrame, pbp: pd.DataFrame, window: int=8)
     out=[]
     for _,batch in ordered.sort_values(['gameday','game_id']).groupby('gameday',sort=True):
         for game in batch.itertuples(index=False):
-            h,a=str(game.home_team),str(game.away_team)
+            h,a=franchise_key(game.home_team),franchise_key(game.away_team)
             ho,ao=avg(h,'off'),avg(a,'off')
             hd,ad=avg(h,'def'),avg(a,'def')
             out.append({'game_id':game.game_id,'epa_offense_diff':ho-ao,
@@ -58,7 +65,9 @@ def make_pregame_advanced(games: pd.DataFrame, pbp: pd.DataFrame, window: int=8)
                 'qb_pass_epa_diff':avg(h,'qb')-avg(a,'qb'),
                 'qb_pass_share_diff':avg(h,'share')-avg(a,'share')})
         for game in batch.itertuples(index=False):
-            for team in (str(game.home_team),str(game.away_team)):
+            if has_scores and (pd.isna(game.home_score) or pd.isna(game.away_score)):
+                continue
+            for team in (franchise_key(game.home_team),franchise_key(game.away_team)):
                 rec=lookup.get((str(game.game_id),team))
                 if rec is not None:
                     def val(x): return float(x) if pd.notna(x) else np.nan
