@@ -17,14 +17,14 @@ def matrix(df):
     market=logit(p('market_home_prob'))
     return np.column_stack([market]+[logit(p(k))-market for k in ('baseline','matchup','sustainability')])
 
-def prepare(raw):
+def prepare(raw, first_year=2019):
     if raw.duplicated(['game_id','model']).any():raise ValueError('Duplicate forecasts')
     base=raw[raw.model.eq('baseline')][['game_id','season','week','home_win','market_home_prob','home_moneyline','away_moneyline']]
     wide=raw.pivot(index='game_id',columns='model',values='prediction').reset_index()
     d=base.merge(wide,on='game_id',validate='one_to_one')
     d['calibrated']=np.nan
     for year in sorted(d.season.unique()):
-        if year<2019:continue
+        if year<first_year:continue
         train=d[d.season<year];test=d[d.season==year]
         if train.season.nunique()<2:continue
         model=LogisticRegression(C=.05,max_iter=1000).fit(matrix(train),train.home_win)
