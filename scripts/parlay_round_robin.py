@@ -155,6 +155,7 @@ def simulate(universe,singles,bankroll=BASE_RESEARCH_BANKROLL):
         for mode in ("positive_only","exploratory"):
             budget=_size_sleeve(candidates,bankroll,mode)
             picked=allocate_round_robins(candidates,budget,mode)
+            funded_games={x["games"] for x in picked}
             direct=straight_lookup.get(key,set())
             for x in picked:
                 legs=set(x["games"].split(" | "))
@@ -170,7 +171,7 @@ def simulate(universe,singles,bankroll=BASE_RESEARCH_BANKROLL):
                 "max_legs_passing_probability_gate":max((x["leg_count"] for x in candidates
                     if x["joint_probability"]>=MIN_JOINT_WIN_PROB),default=0),
                 "longest_winning_unfunded_legs":max((x["leg_count"] for x in candidates
-                    if x["all_won"] and not any(p["games"]==x["games"] for p in picked)),default=0),
+                    if x["all_won"] and x["games"] not in funded_games),default=0),
                 "tickets_funded":len(picked),"stake":float(sum(x["stake"] for x in picked)),
                 "profit":float(sum(x["profit"] for x in picked)),
                 "budget":budget,
