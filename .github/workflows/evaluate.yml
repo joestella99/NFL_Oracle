@@ -110,6 +110,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/selective_parlays.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --straight-bets results/ten_year_ml_spread_parlays/straight_bets.csv --old-parlays results/ten_year_ml_spread_parlays/calculated_cross_game_parlays.csv
       - name: Opportunity breadth capital allocation ten-year check
         run: PYTHONPATH=src:. python scripts/opportunity_breadth.py --market-checks results/ten_year_ml_spread_parlays/all_candidate_markets.csv --baseline results/ten_year_ml_spread_parlays/straight_bets.csv
+      - name: Freeze canonical research v1 ten-year checkpoint
+        run: PYTHONPATH=src:. python scripts/checkpoint_v1.py --source results/ten_year_ml_spread_parlays --output results/checkpoint_v1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -138,6 +140,7 @@ jobs:
             results/ten_year_round_robins/
             results/selective_parlays/
             results/opportunity_breadth/
+            results/checkpoint_v1/
 
   historical_personnel_coverage:
     runs-on: ubuntu-latest
