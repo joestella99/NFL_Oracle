@@ -1,0 +1,49 @@
+name: V7 pull request validation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.github/workflows/v7_review.yml'
+  workflow_dispatch:
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[dev]'
+      - name: Complete regression suite
+        run: PYTHONPATH=src:. python -m pytest -q
+      - name: Compile V7 entrypoints
+        run: python -m compileall -q src/nfl_oracle scripts/decision_v7_replay.py scripts/parlay_live_mixed.py
+  historical_replay:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[dev]'
+      - name: Strictly walk-forward 2016-2025 winner forecasts
+        run: PYTHONPATH=src:. python scripts/backtest_ten_years.py --first 2016 --last 2025 --train-from 2013
+      - name: Historical ATS margins
+        run: PYTHONPATH=src:. python scripts/margin_model_comparison.py --winner-predictions results/ten_year_comparison/predictions.csv
+      - name: Unified V7 annual replay
+        run: |
+          PYTHONPATH=src:. python scripts/decision_v7_replay.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --recent-margins results/margin_model_comparison/margin_predictions.csv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-ten-year-replay
+          path: |
+            results/decision_v7/
+            results/ten_year_comparison/report.json
+            results/margin_model_comparison/report.json
