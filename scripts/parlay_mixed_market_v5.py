@@ -143,7 +143,8 @@ def analyze_game(game,errors:np.ndarray,variant:str,policy:MixedPolicy)->list[di
                 market_probability=float(pm),odds_decimal=float(dec),
                 raw_leg_ev=float(score),conservative_leg_ev=float(conservative_ev),
                 true_margin=margin,spread_line=float(game.spread_line),
-                won=bool(won),pushed=bool(pushed),
+                won=(bool(won) if won is not None else None),
+                pushed=(bool(pushed) if pushed is not None else None),
                 candidate_selected=False,selection_reason="NOT_SELECTED_SIDE",
             ))
     # Select one moneyline side per game: the football model's most probable
