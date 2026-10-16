@@ -35,11 +35,11 @@ MAX_PARLAY_BANKROLL_FRACTION = 1.              # only absolute bankroll is the b
 
 
 def generate_round_robins(slate, *, min_leg_prob=MIN_SINGLE_WIN_PROB,
-                          min_joint_prob=MIN_JOINT_WIN_PROB):
+                          min_joint_prob=0.0):
     """No limit on leg counts. Enumerate every plausible subset.
 
-    Finite NFL slates permit exhaustive examination. Probability gate prunes
-    clearly implausible very-long tickets, not arbitrary leg count.
+    Finite NFL slates permit exhaustive examination. A zero default gate
+    retains long-shot combinations for EV analysis, not automatic funding.
     """
     ml = (
         slate.loc[slate.kind.eq("ML")]
@@ -116,7 +116,8 @@ def allocate_round_robins(tickets, budget, mode):
     if mode=="positive_only":
         eligible=[x for x in tickets if x["conservative_ev"]>0]
     elif mode=="exploratory":
-        eligible=[x for x in tickets if x["estimated_ev"]>=-.10]
+        eligible=[x for x in tickets if x["estimated_ev"]>=-.10
+                  and x["joint_probability"]>=MIN_JOINT_WIN_PROB]
     else:raise ValueError(mode)
     if not eligible:return []
     # Portfolio-wide cents: overlapping combinations share ONE exposure budget.
@@ -165,7 +166,11 @@ def simulate(universe,singles,bankroll=BASE_RESEARCH_BANKROLL):
                 "eligible_ml_legs":nlegs,"combinations_considered":considered,
                 "viable_probability_combinations":len(candidates),
                 "conservative_positive_ev_count":len(favorable),
-                "max_legs_considered":max((x["leg_count"] for x in candidates),default=0),
+                "max_legs_considered":nlegs if nlegs>=2 else 0,
+                "max_legs_passing_probability_gate":max((x["leg_count"] for x in candidates
+                    if x["joint_probability"]>=MIN_JOINT_WIN_PROB),default=0),
+                "longest_winning_unfunded_legs":max((x["leg_count"] for x in candidates
+                    if x["all_won"] and not any(p["games"]==x["games"] for p in picked)),default=0),
                 "tickets_funded":len(picked),"stake":float(sum(x["stake"] for x in picked)),
                 "profit":float(sum(x["profit"] for x in picked)),
                 "budget":budget,
@@ -271,6 +276,8 @@ def make_report(universe,singles,tickets,weekly,baseline_parlays):
             "All combinations may correlate heavily through overlapping legs, amplifying drawdown risk.",
             "The 2016-25 sample has been repeatedly explored, so this is research, not untouched backtesting.",
             "A configurable bankroll ceiling is retained, but there are no arbitrary ticket-count or leg-count caps.",
+            "Winning unfunded combinations are retrospective diagnostic cases only, NEVER counted as selected bets or profit.",
+            "Positive-value mode examines longshots at any joint probability, but only stakes those with positive conservative estimated EV.",
         ],
         "results":results
     }
