@@ -70,11 +70,17 @@ def candidates(winner_predictions, margin_predictions, first=2021):
     ]
     if primary.game_id.duplicated().any():
         raise ValueError("Duplicated pregame statistics")
+    consensus = winner_predictions.pivot(index="game_id", columns="model", values="prediction")
+    required = ["baseline", "matchup", "sustainability"]
+    if not set(required).issubset(consensus.columns):
+        raise ValueError("Cannot build consensus without all three walk-forward winner models")
+    consensus = consensus[required].median(axis=1).rename("consensus_home_win_prob").reset_index()
     forecasts = (
         margin_predictions.merge(
             calibr[["game_id", "calibrated", "home_moneyline", "away_moneyline"]],
             on="game_id", validate="one_to_one",
-        ).merge(primary, on="game_id", validate="one_to_one")
+        ).merge(primary, on="game_id", validate="one_to_one").merge(
+            consensus, on="game_id", validate="one_to_one")
     )
     out = []
     for year in sorted(forecasts.season.unique()):
@@ -98,8 +104,11 @@ def candidates(winner_predictions, margin_predictions, first=2021):
             cover_market_home = (1 - push) * home_ats_market
             cover_market_away = (1 - push) * away_ats_market
             p_home = float(row.calibrated)
-            strong_favorite = max(p_home, 1 - p_home) >= .80
-            fside = "home" if p_home >= .5 else "away"
+            # Consensus triggers a review even when separate ML calibration
+            # shrinks the favorite below 80% (e.g. Patriots/Giants 2025).
+            consensus_home = float(row.consensus_home_win_prob)
+            strong_favorite = max(consensus_home, 1 - consensus_home) >= .80
+            fside = "home" if consensus_home >= .5 else "away"
             gap = float(row.margin_prediction - row.spread_line)
             adverse_signals = {}
             for signal in FOOTBALL_SIGNALS:
@@ -147,7 +156,8 @@ def candidates(winner_predictions, margin_predictions, first=2021):
                         "market_win_prob": float(baseline), "estimated_ev": ev,
                         "risk_score": score, "qualifies": bool(qualifies),
                         "strong_favorite_review": bool(strong_favorite),
-                        "favorite_side": fside, "against_strong_favorite": bool(opposing),
+                        "favorite_side": fside, "consensus_home_win_prob": consensus_home,
+                        "against_strong_favorite": bool(opposing),
                         "predicted_margin": float(row.margin_prediction),
                         "market_home_margin": float(row.spread_line),
                         "margin_gap": gap, "observed_margin": actual_margin,
