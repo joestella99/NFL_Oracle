@@ -52,6 +52,23 @@ export ODDS_API_KEY='your-private-key-here'
 nfl-oracle shortlist --as-of 2026-10-18T11:00 --live-odds
 ```
 
+The research shortlist also produces `experimental_parlay_watchlist.csv`,
+`parlay_candidate_audit.csv`, and `parlay_research_report.json`. This
+**experimental** two-leg *cross-game moneyline* parlay view uses timestamped
+quotes from the **same bookmaker**, excludes games already selected as straight
+candidates, and rejects quote snapshots more than 60 minutes apart. It
+calculates the normal parlay payout from the two American prices by multiplying
+their decimal equivalents. The extra-stake research amount ranges from
+$2 to $15 only when its *estimated* return is positive; negative-estimated-
+return combinations are labeled **watch only** with $0 suggested.
+
+This is not a verified profitable strategy or a validated live moneyline
+model; live shortlist probabilities use the CLI's simpler rolling-form model,
+not the richer historical combined-portfolio predictor. Historical calculated
+returns cannot prove a particular sportsbook would have accepted both leg
+prices simultaneously. Same-game parlays are excluded; no bookmaker-specific
+correlated price is invented, and the experiment never places bets.
+
 The output is named `research_watchlist.csv`, **not betting advice**. The live option writes `live_quotes_audit.csv` to preserve exact quote provenance. Live odds access and pricing depend on the odds provider's current account tier. It is not validated to beat the sportsbook. Future results from the as-of date onward are excluded even if a retrospective schedule data file includes them. No odds means no picks.
 
 ## Hard limitations
