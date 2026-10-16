@@ -1,0 +1,20 @@
+{
+  "policy_id": "nfl-oracle-parlay-v4-2026-10-16-percentage-only",
+  "status": "official_percentage_only_parlay_policy",
+  "replaces_selection_interface": "v3 dollar-funded selection interface; retains its +2% EV and 1% per-leg quote stress",
+  "thresholds": {
+    "min_leg_probability": 0.6,
+    "min_joint_probability": 0.15,
+    "min_conservative_ev": 0.02,
+    "base_probability_haircut": 0.02,
+    "disagreement_haircut_weight": 0.2,
+    "per_leg_price_haircut": 0.01,
+    "require_positive_leg_ev": false
+  },
+  "notes": [
+    "No dollar staking, bankroll caps, or allocation logic.",
+    "As-of, previous-year calibrated outcomes only; no access to future results for game selection.",
+    "Unverified historical prices are mathematical proxies, not tradable bookmaker offers.",
+    "ESPN current snapshots cannot fill previous kickoff dates."
+  ]
+}

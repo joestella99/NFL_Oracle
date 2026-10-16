@@ -1,3 +1,15 @@
+# 2026 personnel-aware NFL Oracle: percentage-only parlay selection
+
+**Active percent-only selection:** `scripts/parlay_2026_review.py` reads [`config/parlay_percentage_policy.json`](config/parlay_percentage_policy.json). This carries forward the approved **+2% conservative combined-ticket EV / 1% payout deterioration per leg** standard, with no individual-leg EV veto and **NO bankroll, stake or dollar optimization**. Every 2..N cross-game combination is evaluated from estimated probabilities, uncertainty and historical pricing; qualifying is NOT a recommendation to place a real wager.
+
+The script regenerates separately held-out, completed **2026** NFL win forecasts using strictly preceding games, ingests `nflreadpy.load_injuries([2023,2024,2025,2026])` when available, checks source timestamps before kickoff, merges QB and offensive-line out/questionable differences and missingness flags, and refits regularized football probability models with/without injuries on strictly earlier seasons. It chooses among unmodified market, football-only and football+injuries using **2023–2025 Brier only**, *before* scoring 2026; reports 2026 Brier/accuracy for all, plus ticket pass/reject funnel. Weekly 2026 includes only **finished non-tied games**; no future games receive an outcome or retrospective price. It exports `results/parlay_2026_percentages` as a GitHub Actions artifact.
+
+`scripts/capture_espn_current.py` now captures current ESPN NFL injuries and depth-chart endpoints, with *collection timestamps*, via the third-party [Public ESPN endpoint reference](https://github.com/pseudo-r/Public-ESPN-API); this **cannot** be used to backfill past starting quarterbacks or 2023–2025 snapshots. Source is unofficial and may fail/rate limit. Future trust requires an independently recorded confirmed starting-QB source observed before kickoff. Observed contemporary depth charts are projections, not proof of actual starters.
+
+The old 2016–2025 dollar-return V3 simulation and frozen v1 historical baseline remain unchanged for reproducibility. **The percentage-only V4 is not an automated betting feature.** Any historical ROI is a price proxy; it does not prove a future betting edge.
+
+---
+
 # Official NFL Oracle parlay policy: V3 (selected October 16, 2026)
 
 **Default parlay selection entrypoint:** `scripts/parlay_portfolio_v3.py`, using versioned thresholds in [`config/parlay_policy.json`](config/parlay_policy.json). This replaces the old V2 research selector as the preferred **parlay policy**, but does not alter the frozen historical V1 checkpoint, existing straight bet policy, or place actual wagers.
