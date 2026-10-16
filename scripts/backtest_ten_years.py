@@ -43,7 +43,8 @@ def compare(games,pbp,first=2016,last=2025):
                    'home_moneyline':test.home_moneyline,'away_moneyline':test.away_moneyline,
                    'spread_line':test.spread_line,'home_spread_odds':test.home_spread_odds,
                    'away_spread_odds':test.away_spread_odds,
-                   'home_score':test.home_score,'away_score':test.away_score}))
+                   'home_score':test.home_score,'away_score':test.away_score,
+                   **{column:test[column] for column in ADVANCED_FEATURES+MATCHUP_FEATURES+STABILITY_FEATURES}}))
     if not outputs:raise ValueError('No test games')
     out=pd.concat(outputs,ignore_index=True)
     if out.duplicated(['game_id','model']).any():raise ValueError('Duplicate predictions')
