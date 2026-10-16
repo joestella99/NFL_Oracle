@@ -2,6 +2,7 @@
 from collections import defaultdict,deque
 import numpy as np
 import pandas as pd
+from nfl_oracle.team_identity import franchise_key
 
 STABILITY_FEATURES=['success_rate_diff','explosive_rate_diff','epa_trimmed_diff',
                     'epa_std_diff','negative_play_diff','pass_success_diff']
@@ -13,6 +14,7 @@ def make_stability(games,pbp,window=8):
     p=pbp.loc[pbp.play_type.isin(['run','pass']),['game_id','posteam','epa','play_type']].copy()
     p['epa']=pd.to_numeric(p.epa,errors='coerce')
     p=p.dropna(subset=['game_id','posteam','epa'])
+    p['posteam']=p['posteam'].map(franchise_key)
     lookup={}
     for (gid,team),g in p.groupby(['game_id','posteam'],sort=False):
         e=g.epa.to_numpy(float)
@@ -32,7 +34,7 @@ def make_stability(games,pbp,window=8):
     out=[]
     for day,batch in order.sort_values(['gameday','game_id']).groupby('gameday',sort=True):
         for g in batch.itertuples(index=False):
-            h,a=str(g.home_team),str(g.away_team)
+            h,a=franchise_key(g.home_team),franchise_key(g.away_team)
             out.append(dict(game_id=g.game_id,success_rate_diff=avg(h,'success')-avg(a,'success'),
               explosive_rate_diff=avg(h,'explosive')-avg(a,'explosive'),
               epa_trimmed_diff=avg(h,'trimmed')-avg(a,'trimmed'),
@@ -41,7 +43,7 @@ def make_stability(games,pbp,window=8):
               pass_success_diff=avg(h,'pass_success')-avg(a,'pass_success')))
         for g in batch.itertuples(index=False):
             if pd.isna(g.home_score) or pd.isna(g.away_score):continue
-            for team in (str(g.home_team),str(g.away_team)):
+            for team in (franchise_key(g.home_team),franchise_key(g.away_team)):
                 val=lookup.get((str(g.game_id),team))
                 if val:hist[team].append(val)
     return pd.DataFrame(out)
