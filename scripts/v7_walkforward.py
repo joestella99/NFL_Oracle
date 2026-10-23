@@ -43,6 +43,8 @@ def replay(audits: pd.DataFrame, policy: V7Policy=V7Policy()):
         np.where(priced.push_probability.astype(float).ge(0) &
                  priced.get("pushed",pd.Series(False,index=priced.index)).eq(True),
                  0.,-1.))
+    result["realized_unit_return"] = float("nan")
+    result.loc[priced.index, "realized_unit_return"] = priced["realized_unit_return"]
     summary=[]
     for (model,kind),g in priced.groupby(["model","kind"]):
         passed=g.loc[g.v7_leg_status.eq("CANDIDATE")]
