@@ -49,3 +49,9 @@ def test_both_sides_and_distinct_games():
 def test_cannot_score_invalid_probability():
     o=calibrate_legs(pd.DataFrame([leg("a",p=1.5)]),history(),asof_season=2026,asof_week=6)
     assert o.iloc[0].v7_leg_status=="INVALID_PROBABILITY"
+
+
+def test_single_game_candidate_has_no_parlay():
+    evaluated=calibrate_legs(pd.DataFrame([leg("only-game")]),history(),asof_season=2026,asof_week=6)
+    assert evaluated.iloc[0].v7_leg_status=="CANDIDATE"
+    assert tickets_for_slate(evaluated).empty
