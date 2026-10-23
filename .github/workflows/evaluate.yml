@@ -125,6 +125,8 @@ jobs:
         run: PYTHONPATH=src:. python scripts/parlay_v5_ten_year.py --predictions results/ten_year_comparison/predictions.csv --warmup results/ten_year_comparison/warmup_predictions_2014_2015.csv --recent-margins results/margin_model_comparison/margin_predictions.csv
       - name: V6 confidence-first small-edge ticket comparison using frozen V5 forecasts
         run: PYTHONPATH=src:. python scripts/parlay_conviction_v6.py --leg-audit results/parlay_v5_ten_year/all_single_market_audits.csv --v5-tickets results/parlay_v5_ten_year/all_qualifying_tickets.csv
+      - name: V7 guarded ten-season 2016-2025 walk-forward simulation
+        run: PYTHONPATH=src:. python scripts/parlay_v7_ten_year.py --audit results/parlay_v5_ten_year/all_single_market_audits.csv --output results/parlay_v7_ten_year
       - name: Capture new pregame ESPN injury and projected starter snapshots (never backfill past games)
         run: PYTHONPATH=src:. python scripts/capture_espn_current.py
       - name: Freeze canonical research v1 ten-year checkpoint
@@ -163,6 +165,7 @@ jobs:
             results/parlay_mixed_market_2026/
             results/parlay_v5_ten_year/
             results/parlay_conviction_v6/
+            results/parlay_v7_ten_year/
             results/espn_asof_2026/
             results/opportunity_breadth/
             results/checkpoint_v1/
