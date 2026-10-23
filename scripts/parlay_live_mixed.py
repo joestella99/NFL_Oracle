@@ -233,6 +233,7 @@ def main():
     a.add_argument("--prior-margins",required=True)
     a.add_argument("--strategy",choices=("v5","v6"),default="v6")
     a.add_argument("--liked-picks",help="CSV with game_id,side,kind; changes preference rank only")
+    a.add_argument("--v7-history",help="Earlier-game settled market-side audits for V7 calibration")
     a.add_argument("--output",default="results/parlay_pregame_mixed")
     args=a.parse_args()
     asof=parse_asof(args.as_of)
@@ -272,6 +273,26 @@ def main():
     elif args.strategy=="v6" and liked:
         from nfl_oracle.conviction import liked_pick_audit
         liked_pick_audit(legs,tickets,liked).to_csv(root/"liked_pick_audit.csv",index=False)
+    if args.v7_history:
+        from nfl_oracle.v7 import V7Policy, calibrate_legs, tickets_for_slate
+        historical = pd.read_csv(args.v7_history)
+        guarded_legs, guarded_tickets = [], []
+        for (season, week), block in legs.groupby(["season","week"], sort=True):
+            checked = calibrate_legs(block, historical, V7Policy(), int(season), int(week))
+            guarded_legs.append(checked)
+            possible = tickets_for_slate(checked)
+            if len(possible):
+                guarded_tickets.append(possible)
+        v7_legs = pd.concat(guarded_legs, ignore_index=True) if guarded_legs else pd.DataFrame()
+        v7_tickets = pd.concat(guarded_tickets, ignore_index=True) if guarded_tickets else pd.DataFrame()
+        v7_legs.to_csv(root/"v7_guarded_legs.csv", index=False)
+        v7_tickets.to_csv(root/"v7_guarded_tickets.csv", index=False)
+        report["v7_guarded"] = dict(
+            status="RESEARCH_ONLY_NOT_ACCEPTED_BOOKMAKER_TICKETS",
+            candidate_sides=int(v7_legs.v7_leg_status.eq("CANDIDATE").sum()) if len(v7_legs) else 0,
+            research_qualifying_tickets=int(v7_tickets.status.eq("RESEARCH_QUALIFIED").sum()) if len(v7_tickets) else 0,
+            warning="Historical calibration and independent actual bookmaker quote verification remain necessary.")
+        (root/"report.json").write_text(json.dumps(report, indent=2))
     print(json.dumps(report,indent=2))
 
 
