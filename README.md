@@ -1,3 +1,9 @@
+# V7 guarded decision research (October 23, 2026)
+
+A new **research-only V7 decision layer** adds earlier-week probability reliability checks, abstention when calibration history is insufficient, both-side ML/ATS assessment, and explicit conservative-EV screening without changing archived V5/V6 results. It does **not** replace the live football predictor or establish profitability. See [implementation, usage and unresolved blockers](docs/v7_guarded_decisions.md). Run `PYTHONPATH=src:. pytest -q tests/test_v7_decisions.py` to check V7 invariants.
+
+---
+
 # V6 confidence-first parlay review
 
 V6 adds a confidence-first view for small-edge parlays alongside the existing
