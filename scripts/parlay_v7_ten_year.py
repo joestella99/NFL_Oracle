@@ -15,10 +15,12 @@ from nfl_oracle.v7 import V7Policy, calibrate_legs, tickets_for_slate
 def run(audits: pd.DataFrame, policy=V7Policy()):
     required={"season","week","model","game_id","kind","side",
               "win_probability","odds_decimal","won","pushed","push_probability"}
-    missing=required-set(audits.columns)
+    missing=required-set(audits.columns)-({"odds_decimal"} if "decimal_odds" in audits.columns else set())
     if missing:
         raise ValueError(f"Missing audit columns {sorted(missing)}")
     data=audits.copy()
+    if "odds_decimal" not in data and "decimal_odds" in data:
+        data=data.rename(columns={"decimal_odds":"odds_decimal"})
     data["won"]=data["won"].replace({"True":True,"False":False,"true":True,"false":False})
     data["pushed"]=data["pushed"].replace({"True":True,"False":False,"true":True,"false":False})
     if data.duplicated(["season","week","model","game_id","kind","side"]).any():
