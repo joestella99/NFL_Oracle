@@ -89,3 +89,22 @@ make retroactively known results available before they happened. Historical
 calibration is computed from earlier weeks/seasons only. The live predictor
 remains preliminary rather than the full historical EPA/QB ensemble.
 
+
+## Walk-forward diagnostic
+
+`scripts/v7_walkforward.py` consumes frozen historical single-market-side audits
+and replays each week with calibration restricted to strictly earlier weeks.
+It writes `historical_side_decisions.csv`, `market_replay_summary.csv`, and
+`report.json`. This script is a **single-leg screening diagnostic** only;
+it does not backtest portfolio allocation or accepted sportsbook parlay quotes.
+
+```bash
+PYTHONPATH=src:. python scripts/v7_walkforward.py \\
+  --audit path/to/historical_asof_market_side_audits.csv \\
+  --output results/v7_walkforward
+```
+
+The source must include finalized `won` and an original pregame
+`win_probability` and `odds_decimal` per side. Earlier-year derived
+market prices are **only proxies**. This replay is not executed by default
+in the main workflow until the required preserved audit is provided.
