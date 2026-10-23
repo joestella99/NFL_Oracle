@@ -128,5 +128,7 @@ def tickets_for_slate(legs: pd.DataFrame, policy=V7Policy()):
                            p>=policy.min_ticket_probability and ev>=policy.min_ticket_ev
                            else "REJECTED"),
                         caveat="Independence and compounded prices unverified; no accepted sportsbook parlay quote"))
+    if not records:
+        return pd.DataFrame()
     return pd.DataFrame(records).sort_values(
         ["conservative_ev","conservative_all_win_probability"],ascending=False)
