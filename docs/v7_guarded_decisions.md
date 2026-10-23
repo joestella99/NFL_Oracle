@@ -68,3 +68,24 @@ No model run, valid prices, or adequate historical calibration means **NO
 RECOMMENDATION**. V7's `RESEARCH_QUALIFIED` flag is intentionally not a
 betting recommendation. The policy is percentage-based and does not allocate
 stakes or place wagers.
+
+## Integrated live invocation
+
+The existing live-preview entrypoint now supports an optional `--v7-history`
+argument. It keeps the established V6 outputs, additionally exporting
+`v7_guarded_legs.csv` and `v7_guarded_tickets.csv` for each season/week,
+plus V7 research funnel metrics in the report.
+
+```bash
+PYTHONPATH=src:. python scripts/parlay_live_mixed.py \
+  --as-of 2026-10-23T13:00:00-04:00 \
+  --quotes-csv verified_same_book_quotes.csv \
+  --prior-margins earlier_margin_predictions.csv \
+  --v7-history saved_prior_week_market_side_audits.csv
+```
+
+Inputs are still required; this does not fetch missing sportsbook data or
+make retroactively known results available before they happened. Historical
+calibration is computed from earlier weeks/seasons only. The live predictor
+remains preliminary rather than the full historical EPA/QB ensemble.
+
