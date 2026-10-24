@@ -45,7 +45,7 @@ Source: [sportsdataverse/cfbfastR-data](https://github.com/sportsdataverse/cfbfa
 - Logistic regression on pregame Elo difference and home field estimates ML win probabilities; 65% archived no-vig ML consensus within the chosen book plus 35% model. 
 - Ridge regression on pregame Elo difference and home field estimates score margin. 60% archived implied spread margin plus 40% model margin; prior-season residual SD (minimum 15 points) maps to spread cover probability.
 - The decision engine considers both market sides but chooses at most one positive-stressed-EV leg per game, with an absolute 2-point probability stress, 1% profit-odds stress, and >=2% conservative EV selection rule.
-- For each season/week, one highest-EV 2-leg ticket and one highest-EV 3-leg ticket, each from the six top eligible cross-game legs; the probability product assumes independence.
+- For each season/week, one highest-EV 2-leg ticket and one highest-EV 3-leg ticket, each from the six top eligible cross-game legs **at one shared sportsbook**. Different-book combinations are rejected; the probability product still assumes independence and a book-accepted parlay payout is not proven.
 - Books are chosen by a *fixed* provider priority, not the retrospectively best quote. No betting stakes, compounding, promotions, limits or actual slips.
 - Spread pushes void individual spread legs, and an otherwise losing parlay is still a loser.
 
