@@ -50,7 +50,7 @@ season,week,legs,selections,game_ids,joint_prob_independence_assumed,conservativ
 2020,6,2,Tulane +6.5 | Boston College +6,401212523 | 401234603,0.326214,0.177632,-1.0,False,True
 2020,7,2,Louisiana Tech +12 | Notre Dame -16,401207149 | 401234613,0.3351,0.209712,-1.0,False,True
 2020,8,2,Florida Atlantic +19.5 | LSU -4.5,401207156 | 401237118,0.409705,0.479035,2.644628,True,True
-2020,9,2,Florida Atlantic -5 | Baylor +3,401207162 | 401236013,0.373647,0.348864,-1.0,False,True
+2020,9,2,Baylor +3 | Air Force +10.5,401236013 | 401248999,0.359488,0.297752,-1.0,False,True
 2020,10,2,Kansas State +12.5 | Utah State +16,401236020 | 401249009,0.352906,0.273991,-1.0,False,True
 2020,11,2,New Mexico +17.5 | Western Michigan -1.5,401249015 | 401249866,0.348218,0.257067,2.644628,True,True
 2020,12,2,LSU -1.5 | Air Force -8,401237136 | 401249018,0.371517,0.341176,2.644628,True,True
@@ -102,7 +102,7 @@ season,week,legs,selections,game_ids,joint_prob_independence_assumed,conservativ
 2024,5,2,New Mexico State ML | Oklahoma +2,401641035 | 401628375,0.221595,0.567288,-1.0,False,True
 2024,6,2,Troy ML | San José State -7,401643797 | 401643726,0.169318,0.7549,-1.0,False,True
 2024,7,2,NC State ML | San José State +2.5,401635574 | 401643729,0.272085,0.38701,-1.0,False,True
-2024,8,2,Kennesaw State ML | Ball State +27.5,401641019 | 401628399,0.212498,0.442992,-1.0,False,True
+2024,8,2,Air Force ML | Ball State +27.5,401643734 | 401628399,0.222906,0.42981,-1.0,False,True
 2024,9,2,Troy ML | Michigan -3,401643818 | 401628529,0.235068,0.441497,-1.0,False,True
 2024,10,2,Troy ML | Northwestern +2.5,401643824 | 401628538,0.252775,0.264796,4.059091,True,True
 2024,11,2,James Madison -14.5 | Memphis -7,401643826 | 401645362,0.314887,0.136742,0.909091,True,True

@@ -18,7 +18,7 @@ season,week,legs,selections,game_ids,joint_prob_independence_assumed,conservativ
 2020,6,3,Tulane +6.5 | Boston College +6 | Syracuse +2.5,401212523 | 401234603 | 401234605,0.185478,0.272196,-1.0,False,True
 2020,7,3,Louisiana Tech +12 | Notre Dame -16 | Tulane +6.5,401207149 | 401234613 | 401212487,0.185799,0.274396,-1.0,False,True
 2020,8,3,Florida Atlantic +19.5 | LSU -4.5 | Navy +15.5,401207156 | 401237118 | 401212552,0.246586,0.691335,-1.0,False,True
-2020,9,3,Florida Atlantic -5 | Baylor +3 | Air Force +10.5,401207162 | 401236013 | 401248999,0.223,0.529558,-1.0,False,True
+2020,9,3,Baylor +3 | Air Force +10.5 | UNLV +10.5,401236013 | 401248999 | 401249002,0.210737,0.445444,-1.0,False,True
 2020,10,3,Kansas State +12.5 | Utah State +16 | Florida Atlantic -7,401236020 | 401249009 | 401207169,0.205946,0.412584,-1.0,False,True
 2020,11,3,New Mexico +17.5 | Western Michigan -1.5 | Arizona +15.5,401249015 | 401249866 | 401249403,0.199567,0.368827,5.957926,True,True
 2020,12,3,LSU -1.5 | Air Force -8 | Temple +7,401237136 | 401249018 | 401212519,0.22229,0.524688,-1.0,False,True
