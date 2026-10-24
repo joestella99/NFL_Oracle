@@ -35,7 +35,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add results/cfb_ten_year/
+          git add -f results/cfb_ten_year/report.json results/cfb_ten_year/annual.csv results/cfb_ten_year/singles.csv results/cfb_ten_year/parlays_2.csv results/cfb_ten_year/parlays_3.csv
           if ! git diff --cached --quiet; then
             git commit -m "Archive CFB 2016-2025 research replay outputs"
             git push origin HEAD:main
