@@ -1,0 +1,58 @@
+season,week,legs,selections,game_ids,joint_prob_independence_assumed,conservative_ev_independence_assumed,unit_profit,won,has_assumed_price
+2016,2,3,UNLV +27 | Syracuse +17 | UCF +36,400869102 | 400869429 | 400869510,0.161414,0.265894,-1.0,False,False
+2016,8,3,California +2.5 | Ohio State -17.5 | Illinois +39.5,400869140 | 400869645 | 400869676,0.156337,0.203296,-1.0,False,False
+2016,9,3,Rice +30.5 | Houston -9.5 | Virginia +32,400869393 | 400869549 | 400869475,0.192624,0.421204,-1.0,False,False
+2016,12,3,Houston +17 | Ohio State -20.5 | UCLA +13,400869562 | 400869649 | 400869163,0.153755,0.242065,-1.0,False,False
+2017,3,3,Memphis +3 | SMU +22 | East Carolina +27,400935270 | 400934510 | 400937468,0.166907,0.243799,-1.0,False,False
+2017,7,3,Temple -10.5 | East Carolina +35 | Wisconsin -17,400941821 | 400941820 | 400935382,0.158812,0.216411,-1.0,False,False
+2017,13,3,Virginia Tech -7 | Baylor +24.5 | Boston College -4,400937530 | 400934556 | 400937531,0.15929,0.222267,6.788342,True,False
+2018,3,3,SMU +37 | San Diego State +4.5 | TCU +12.5,401012890 | 401012738 | 401013074,0.164466,0.242025,6.664498,True,False
+2018,12,3,Liberty +29.5 | Michigan State ML | TCU +0,401012339 | 401012887 | 401013036,0.161029,0.160279,-1.0,False,False
+2018,13,3,Northwestern -14.5 | Boston College -5 | Virginia Tech +5,401012815 | 401013184 | 401013183,0.161561,0.189642,-1.0,False,False
+2019,9,3,Virginia -4.5 | Wyoming -12 | Penn State -5.5,401112493 | 401117533 | 401112218,0.178554,0.301817,-1.0,False,False
+2019,13,3,Wyoming -4.5 | App State -28 | Cincinnati -7.5,401117550 | 401121973 | 401117907,0.163023,0.190473,-1.0,False,False
+2020,2,3,Syracuse +24.5 | Wake Forest +36 | UTEP +44,401234565 | 401234562 | 401236222,0.240245,0.647839,-1.0,False,True
+2020,3,3,Syracuse +21.5 | Tulsa +24.5 | North Texas +15,401234571 | 401236041 | 401207120,0.220192,0.510294,-1.0,False,True
+2020,4,3,Kansas State +28 | Missouri +29 | Syracuse +7.5,401235996 | 401236951 | 401234594,0.250766,0.720001,5.957926,True,True
+2020,5,3,Air Force +6.5 | Florida Atlantic -5 | Boston College +14.5,401212557 | 401207136 | 401234597,0.222954,0.529241,-1.0,False,True
+2020,6,3,Tulane +6.5 | Boston College +6 | Syracuse +2.5,401212523 | 401234603 | 401234605,0.185478,0.272196,-1.0,False,True
+2020,7,3,Louisiana Tech +12 | Notre Dame -16 | Tulane +6.5,401207149 | 401234613 | 401212487,0.185799,0.274396,-1.0,False,True
+2020,8,3,Florida Atlantic +19.5 | LSU -4.5 | Navy +15.5,401207156 | 401237118 | 401212552,0.246586,0.691335,-1.0,False,True
+2020,9,3,Florida Atlantic -5 | Baylor +3 | Air Force +10.5,401207162 | 401236013 | 401248999,0.223,0.529558,-1.0,False,True
+2020,10,3,Kansas State +12.5 | Utah State +16 | Florida Atlantic -7,401236020 | 401249009 | 401207169,0.205946,0.412584,-1.0,False,True
+2020,11,3,New Mexico +17.5 | Western Michigan -1.5 | Arizona +15.5,401249015 | 401249866 | 401249403,0.199567,0.368827,5.957926,True,True
+2020,12,3,LSU -1.5 | Air Force -8 | Temple +7,401237136 | 401249018 | 401212519,0.22229,0.524688,-1.0,False,True
+2020,13,3,Missouri +2 | LSU +15.5 | Syracuse +17,401237143 | 401237146 | 401234655,0.25484,0.747951,5.957926,True,True
+2020,14,3,BYU +11 | LSU +29.5 | Auburn +6,401237514 | 401265817 | 401237150,0.226748,0.555266,-1.0,False,True
+2020,15,3,LSU +23.5 | Minnesota +10.5 | Baylor +6.5,401251100 | 401247345 | 401250713,0.211879,0.453279,-1.0,False,True
+2020,16,3,LSU +0 | Iowa State +5.5 | Cincinnati -14,401267165 | 401262060 | 401264085,0.167597,0.149551,-1.0,False,True
+2021,2,3,BYU ML | UConn +35 | Massachusetts +38,401309848 | 401282820 | 401282623,0.19524,1.30968,-1.0,False,True
+2021,4,3,UL Monroe +24 | UNLV +30 | Vanderbilt +37,401309611 | 401310707 | 401282088,0.183099,0.255876,-1.0,False,True
+2021,8,3,Ohio ML | Massachusetts +35.5 | Minnesota -4,401309576 | 401282663 | 401282767,0.151448,0.520992,-1.0,False,True
+2021,9,3,Buffalo -13.5 | Washington ML | Clemson -9,401309578 | 401309883 | 401282670,0.155569,0.25659,-1.0,False,True
+2021,11,3,LSU ML | Coastal Carolina -13 | Georgia Southern +2,401282130 | 401309639 | 401309640,0.151007,0.219741,-1.0,False,True
+2021,12,3,South Alabama +28 | Buffalo ML | Texas ML,401282143 | 401309590 | 401287947,0.163534,0.355935,-1.0,False,True
+2021,13,3,Louisiana -21.5 | Rutgers ML | Washington +1,401309650 | 401282766 | 401309905,0.188257,0.38606,-1.0,False,True
+2022,2,3,Hawai'i +53 | Liberty ML | Charlotte +28,401405077 | 401426551 | 401426545,0.169796,0.826629,-1.0,False,True
+2022,9,3,Louisiana ML | Iowa State +2 | Western Kentucky -10,401426359 | 401404100 | 401426597,0.200968,0.479649,-1.0,False,True
+2022,11,3,Western Kentucky -13.5 | Coastal Carolina -5 | Air Force -21,401426607 | 401426371 | 401415256,0.209265,0.435351,-1.0,False,True
+2023,7,3,Buffalo -3 | Houston ML | North Carolina -2.5,401532421 | 401525862 | 401525526,0.15417,0.217743,-1.0,False,True
+2023,9,3,Eastern Michigan ML | Army -10 | Nevada +1,401532431 | 401520349 | 401532604,0.159604,0.317701,-1.0,False,True
+2023,11,3,Fresno State +2.5 | Iowa -1 | Louisiana -7.5,401532614 | 401520384 | 401531911,0.183458,0.258341,-1.0,False,True
+2023,12,3,Penn State -19.5 | New Mexico State +25 | Duke -3,401520417 | 401520404 | 401525555,0.176863,0.213103,-1.0,False,True
+2023,13,3,East Carolina -3 | Louisiana -12.5 | Baylor +13,401531346 | 401531926 | 401525902,0.187591,0.286689,-1.0,False,True
+2023,14,3,SMU ML | Florida State +1.5 | Texas -14.5,401539477 | 401539478 | 401539479,0.151466,0.41291,8.476033,True,True
+2024,7,3,NC State ML | San José State +2.5 | Notre Dame -22.5,401635574 | 401643729 | 401628981,0.160996,0.559352,-1.0,False,True
+2024,8,3,Ball State +27.5 | LSU -3 | UConn +2.5,401628399 | 401628392 | 401629034,0.189435,0.299333,-1.0,False,True
+2024,10,3,Northwestern +2.5 | South Alabama -5.5 | Virginia Tech -3.5,401628538 | 401643823 | 401635604,0.18447,0.26528,-1.0,False,True
+2024,11,3,James Madison -14.5 | Memphis -7 | Texas Tech +5,401643826 | 401645362 | 401636921,0.171101,0.17358,-1.0,False,True
+2024,12,3,Kennesaw State +21 | Notre Dame -21.5 | USC -6.5,401641022 | 401628985 | 401628549,0.21963,0.506444,-1.0,False,True
+2024,14,3,San José State -2.5 | Iowa -3 | Virginia Tech -4.5,401635625 | 401628562 | 401635640,0.206824,0.418606,2.644628,True,True
+2025,4,3,Kent State +45 | UAB +39 | Notre Dame -24.5,401754541 | 401752715 | 401752848,0.249655,0.712382,-1.0,False,True
+2025,6,3,Charlotte +28 | Memphis -21 | Oklahoma State +21.5,401762475 | 401762478 | 401756910,0.18345,0.25828,-1.0,False,True
+2025,8,3,Louisiana ML | Bowling Green -3 | Troy -4.5,401761668 | 401762839 | 401761633,0.158544,0.478932,-1.0,False,True
+2025,9,3,Buffalo -10 | Texas -8 | Delaware -8,401762844 | 401752749 | 401757287,0.171679,0.177547,-1.0,False,True
+2025,11,3,Nebraska ML | Sam Houston +21 | Jacksonville State -1.5,401752895 | 401752944 | 401757297,0.160422,0.324452,7.382645,True,True
+2025,12,3,Penn State -7 | Jacksonville State +4 | New Mexico State +41.5,401752903 | 401757302 | 401752771,0.22097,0.515636,5.957926,True,True
+2025,13,3,Army -10 | Western Kentucky +24.5 | Penn State -7,401762512 | 401752777 | 401752908,0.186259,0.277553,-1.0,False,True
+2025,14,3,Northern Illinois -5 | Jacksonville State ML | Ole Miss -7,401762871 | 401757312 | 401752788,0.16921,0.306302,-1.0,False,True

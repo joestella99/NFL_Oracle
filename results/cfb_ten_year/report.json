@@ -1,0 +1,149 @@
+{
+  "title": "CFB 2016-2025 fixed-policy research replay",
+  "source_sha": "09f2595e1b23d485691577611d0d1f9cccbb4331",
+  "source": "sportsdataverse/cfbfastR-data schedules + archived betting odds",
+  "research_only": true,
+  "limitations": [
+    "Archived prices may not be timestamped pre-kickoff or executable.",
+    "Missing ATS juice assumed -110, not a historical quote.",
+    "CFBD pregame Elo is archive-derived; input snapshots not independently verified.",
+    "Parlay payouts multiply single-leg odds, not verified same-book parlay acceptances.",
+    "Model policy was designed after observing broader betting research; this is not untouched validation.",
+    "Preseason Elo inputs and absent matched quotes reduce sample coverage.",
+    "Risk stresses are preset heuristics, not calibrated confidence intervals."
+  ],
+  "configuration": {
+    "tested_seasons": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "training_from": 2014,
+    "price_assumption": "ATS -110 only when source price missing",
+    "book_priority": [
+      "PINNACLE",
+      "Bovada",
+      "BOVADA & bodog",
+      "DraftKings",
+      "FanDuel",
+      "BetMGM",
+      "Caesars",
+      "bet365",
+      "5Dimes & sportbet",
+      "BETOnline & SPORTS BETTING"
+    ],
+    "singles_per_game_max": 1,
+    "max_legs_for_weekly_parlay": 3,
+    "parlays_per_week_per_length": 1,
+    "edge_floor": 0.02,
+    "probability_stress_absolute": 0.02,
+    "profit_odds_haircut": 0.01,
+    "ml_blend_market_weight": 0.65,
+    "ats_blend_market_margin_weight": 0.6
+  },
+  "source_coverage": {
+    "raw_rows": 324920,
+    "unmatched_side_rows": 149227,
+    "matched_two_sided_market_pairs": 9793
+  },
+  "training_by_season": {
+    "2016": {
+      "training_games": 1445,
+      "margin_residual_sd": 16.859
+    },
+    "2017": {
+      "training_games": 2164,
+      "margin_residual_sd": 17.04
+    },
+    "2018": {
+      "training_games": 2900,
+      "margin_residual_sd": 16.97
+    },
+    "2019": {
+      "training_games": 3633,
+      "margin_residual_sd": 16.902
+    },
+    "2020": {
+      "training_games": 4367,
+      "margin_residual_sd": 16.833
+    },
+    "2021": {
+      "training_games": 4875,
+      "margin_residual_sd": 16.824
+    },
+    "2022": {
+      "training_games": 5607,
+      "margin_residual_sd": 16.778
+    },
+    "2023": {
+      "training_games": 6341,
+      "margin_residual_sd": 16.748
+    },
+    "2024": {
+      "training_games": 7091,
+      "margin_residual_sd": 16.68
+    },
+    "2025": {
+      "training_games": 7843,
+      "margin_residual_sd": 16.686
+    }
+  },
+  "full_period": {
+    "singles": {
+      "bets": 1648,
+      "wins": 622,
+      "losses": 1007,
+      "pushes": 19,
+      "units_profit": -104.1821,
+      "roi": -0.06322,
+      "hit_rate_decided": 0.38183
+    },
+    "ml": {
+      "bets": 786,
+      "wins": 207,
+      "losses": 579,
+      "pushes": 0,
+      "units_profit": -56.6153,
+      "roi": -0.07203,
+      "hit_rate_decided": 0.26336
+    },
+    "ats": {
+      "bets": 862,
+      "wins": 415,
+      "losses": 428,
+      "pushes": 19,
+      "units_profit": -47.5668,
+      "roi": -0.05518,
+      "hit_rate_decided": 0.49229
+    },
+    "parlay2": {
+      "bets": 123,
+      "wins": 26,
+      "losses": 97,
+      "pushes": 0,
+      "units_profit": 19.3751,
+      "roi": 0.15752,
+      "hit_rate_decided": 0.21138
+    },
+    "parlay3": {
+      "bets": 57,
+      "wins": 9,
+      "losses": 48,
+      "pushes": 0,
+      "units_profit": 7.7879,
+      "roi": 0.13663,
+      "hit_rate_decided": 0.15789
+    }
+  },
+  "n_hypothetically_priced_ats_bets": 760,
+  "fbs_games_scored": 7160,
+  "audit_candidates": 18286,
+  "n_weeks_with_any_bet": 144
+}
