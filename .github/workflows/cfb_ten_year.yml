@@ -26,7 +26,7 @@ jobs:
           print("HTTP",r.status_code,"bytes",len(r.content),flush=True)
           r.raise_for_status()
           df=pd.read_csv(io.BytesIO(r.content),compression="gzip",low_memory=False)
-          print("ODDS ROWS",len(df),"COLUMNS",df.columns.tolist(),flush=True)
+          print("ODDS ROWS",len(df),"COLUMNS",df.columns.tolist(),flush=True)\n          print("MARKETS", df.market_type.value_counts().head(20).to_dict(), flush=True)\n          print("BOOKS", df.book.value_counts().head(20).to_dict(), flush=True)\n          for m in ["money_line","spread","total","point_spread","over_under"]:\n            s=df[(df.season==2024)&(df.market_type==m)]\n            print("EXAMPLE",m,len(s),s.head(6).to_json(orient="records"),flush=True)
           print("SAMPLE",df.head(3).to_json(orient="records"),flush=True)
           for y in [2016,2020,2025]:
             print("YEAR",y, "COUNT",len(df[df.get('season',pd.Series(dtype='int64'))==y]) if 'season' in df else 'unknown',flush=True)
