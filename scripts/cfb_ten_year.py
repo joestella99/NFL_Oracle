@@ -228,6 +228,9 @@ def make_parlays(singles, length):
         for combo in combinations(top.to_dict("records"),length):
             if len({x["game_id"] for x in combo}) != length:
                 continue
+            # A parlay must use a single quoted sportsbook for every leg.
+            if len({x["book"] for x in combo}) != 1:
+                continue
             p = math.prod(x["stressed_probability"] for x in combo)
             price = math.prod(1+(decimal_odds(x["american_odds"])-1)*(1-PRICE_STRESS) for x in combo)
             ev = p*price - 1
