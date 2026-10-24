@@ -33,7 +33,7 @@ ATS_MARKET_WEIGHT = 0.60
 def get_csv(url, compression=None):
     r = requests.get(url, timeout=120)
     r.raise_for_status()
-    return pd.read_csv(io.BytesIO(r.content), compression=compression, low_memory=False)
+    return pd.read_csv(io.BytesIO(r.content), compression=compression, low_memory=False, encoding_errors="replace")
 
 
 def normalize(s):
