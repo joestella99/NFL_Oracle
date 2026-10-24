@@ -71,7 +71,7 @@ def test_parlay_one_per_week():
     for i in range(4):
         rows.append({"season":2025,"week":3,"game_id":i+1,
             "conservative_ev":.07,"stressed_probability":.68,
-            "american_odds":120,"selection":str(i),"won":True,
+            "american_odds":120,"selection":str(i),"book":"PINNACLE","won":True,
             "push":False,"assumed_spread_price":False})
     p=make_parlays(pd.DataFrame(rows),2)
     assert len(p)==1
