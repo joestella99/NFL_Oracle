@@ -1,0 +1,33 @@
+name: CFB 10-season research replay
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/cfb_ten_year.py'
+      - 'tests/test_cfb_ten_year.py'
+      - '.github/workflows/cfb_ten_year.yml'
+  workflow_dispatch:
+jobs:
+  ten_year:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pandas numpy scikit-learn requests pytest
+      - name: Inspect betting data fields (temporary probe)
+        run: |
+          python - <<'PY'
+          import pandas as pd,requests,io
+          url = "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/betting/csv/cfb_line_odds.csv.gz"
+          r=requests.get(url,timeout=120)
+          print("HTTP",r.status_code,"bytes",len(r.content),flush=True)
+          r.raise_for_status()
+          df=pd.read_csv(io.BytesIO(r.content),compression="gzip",low_memory=False)
+          print("ODDS ROWS",len(df),"COLUMNS",df.columns.tolist(),flush=True)
+          print("SAMPLE",df.head(3).to_json(orient="records"),flush=True)
+          for y in [2016,2020,2025]:
+            print("YEAR",y, "COUNT",len(df[df.get('season',pd.Series(dtype='int64'))==y]) if 'season' in df else 'unknown',flush=True)
+          PY
