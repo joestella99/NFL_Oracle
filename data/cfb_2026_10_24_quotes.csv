@@ -1,0 +1,11 @@
+game_id,kickoff_et,away,home,market,selection,american_odds,model_probability,probability_se
+tenn_sc,2026-10-24T15:30:00-04:00,Tennessee,South Carolina,ml,Tennessee ML,114,,
+tenn_sc,2026-10-24T15:30:00-04:00,Tennessee,South Carolina,spread,Tennessee +2.5,-112,,
+tamu_bama,2026-10-24T15:30:00-04:00,Texas A&M,Alabama,spread,Texas A&M +14,-113,,
+byu_ucf,2026-10-24T15:30:00-04:00,BYU,UCF,spread,BYU -6.5,-124,,
+iowa_minn,2026-10-24T15:30:00-04:00,Iowa,Minnesota,spread,Iowa -7,-108,,
+oregon_illinois,2026-10-24T15:00:00-04:00,Oregon,Illinois,spread,Illinois +10,-110,,
+olemiss_texas,2026-10-24T19:30:00-04:00,Ole Miss,Texas,spread,Ole Miss +3.5,-115,,
+olemiss_texas,2026-10-24T19:30:00-04:00,Ole Miss,Texas,ml,Ole Miss ML,139,,
+usc_wisc,2026-10-24T19:30:00-04:00,USC,Wisconsin,ml,USC ML,-140,,
+houston_utah,2026-10-24T22:15:00-04:00,Houston,Utah,spread,Houston +7,-115,,
