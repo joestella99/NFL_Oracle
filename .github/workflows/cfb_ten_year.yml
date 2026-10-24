@@ -1,4 +1,4 @@
-name: CFB 10-season research replay
+name: CFB 2016-2025 walk-forward replay
 on:
   push:
     branches: [main]
@@ -7,32 +7,36 @@ on:
       - 'tests/test_cfb_ten_year.py'
       - '.github/workflows/cfb_ten_year.yml'
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   ten_year:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install pandas numpy scikit-learn requests pytest
-      - name: Inspect betting data fields (temporary probe)
+      - name: Install research dependencies
+        run: pip install pandas numpy scikit-learn requests pytest
+      - name: Unit tests and chronology safeguards
+        run: PYTHONPATH=. pytest -q tests/test_cfb_ten_year.py
+      - name: 2016-2025 walk-forward research replay
+        run: PYTHONPATH=. python scripts/cfb_ten_year.py --output results/cfb_ten_year
+      - name: Archive detailed results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cfb-ten-season-replay
+          path: results/cfb_ten_year/
+      - name: Publish audited results to source repository
+        if: success() && github.ref == 'refs/heads/main'
         run: |
-          python - <<'PY'
-          import pandas as pd,requests,io
-          url = "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/betting/csv/cfb_line_odds.csv.gz"
-          r=requests.get(url,timeout=120)
-          print("HTTP",r.status_code,"bytes",len(r.content),flush=True)
-          r.raise_for_status()
-          df=pd.read_csv(io.BytesIO(r.content),compression="gzip",low_memory=False)
-          print("ODDS ROWS",len(df),"COLUMNS",df.columns.tolist(),flush=True)
-          print("MARKETS", df.market_type.value_counts().head(20).to_dict(), flush=True)
-          print("BOOKS", df.book.value_counts().head(20).to_dict(), flush=True)
-          for m in ["money_line","spread","total","point_spread","over_under"]:
-            s=df[(df.season==2024)&(df.market_type==m)]
-            print("EXAMPLE",m,len(s),s.head(6).to_json(orient="records"),flush=True)
-          print("SAMPLE",df.head(3).to_json(orient="records"),flush=True)
-          for y in [2016,2020,2025]:
-            print("YEAR",y, "COUNT",len(df[df.get('season',pd.Series(dtype='int64'))==y]) if 'season' in df else 'unknown',flush=True)
-          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/cfb_ten_year/
+          if ! git diff --cached --quiet; then
+            git commit -m "Archive CFB 2016-2025 research replay outputs"
+            git push origin HEAD:main
+          fi
